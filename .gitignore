@@ -1,0 +1,5 @@
+*.dSYM/
+images*/
+lib/
+AnnRay
+libraylib.a
