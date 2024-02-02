@@ -2,13 +2,16 @@
 
 # set -xe
 
+MAIN_FILE=../src/rlib_annray.cpp 
+OUTPUT_FILE=AnnRay
+
 FLAGS="-g -std=c++11 -O3 -Wall -Wno-deprecated-declarations -Wno-unused-but-set-variable"
 
 FRAMEWORKS="-framework CoreVideo -framework IOKit -framework Cocoa 
 -framework GLUT -framework OpenGL"
 
-LIBS="./libraylib.a"
+LIBS="../external/raylib/src/libraylib.a"
 
-INCLUDE_PATHS="-I./lib"
+INCLUDE_PATHS="-I../external/raylib/src/"
 
-clang++ $FLAGS $FRAMEWORKS rlib_annray.cpp -o AnnRay $INCLUDE_PATHS $LIBS
+clang++ $FLAGS $FRAMEWORKS $MAIN_FILE -o $OUTPUT_FILE $INCLUDE_PATHS $LIBS
