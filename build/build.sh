@@ -12,6 +12,6 @@ FRAMEWORKS="-framework CoreVideo -framework IOKit -framework Cocoa
 
 LIBS="../external/raylib/src/libraylib.a"
 
-INCLUDE_PATHS="-I../external/raylib/src/"
+INCLUDE_PATHS="-I../external/raylib/src/ -I../external/raygui"
 
 clang++ $FLAGS $FRAMEWORKS $MAIN_FILE -o $OUTPUT_FILE $INCLUDE_PATHS $LIBS

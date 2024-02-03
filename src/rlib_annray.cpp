@@ -6,8 +6,14 @@
 #include <float.h>
 #include <time.h>
 #include <assert.h>
+#include <string.h>
+
 
 #include "raylib.h"
+
+#define RAYGUI_IMPLEMENTATION
+#include "raygui.h"
+
 #include "rlib_annray.h"
 #include "annray_math.h"
 
@@ -22,6 +28,21 @@
 #define IMAGEDISPLAYSIDEGAP (float)32
 
 #define TESTTHUMB 0
+
+const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME};
+const global char *Labels[] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
+
+struct bbox
+{
+    u32 Label;
+    Rectangle Box;
+};
+
+struct zoom
+{
+    f32 Strenght;
+    Vector2 Position;
+};
 
 internal
 void GenerateThumbnails(Image PreviewImages[], Texture PreviewTextures[], FilePathList PathList)
@@ -47,15 +68,15 @@ void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
         }
 }
 
-internal inline 
-void BoxManipulation(u32* Total, u32 CurrentGesture,Vector2 MousePosition, Rectangle Bboxes[])
+internal inline
+u32 BoxManipulation(u32 Total, u32 CurrentGesture, u32 CurrentLabel, Vector2 MousePosition, bbox Bboxes[])
 {
     internal u32 PrevGesture = 3;
     internal u32 CurrentBbox = 0;
-    // u32 TotalBbox = Total;
+    Rectangle *BBox = &Bboxes[CurrentBbox].Box;
+    Bboxes[CurrentBbox].Label = CurrentLabel;
+    internal Vector2 Tap;
 
-    Rectangle *BBox = &Bboxes[CurrentBbox];
-    Vector2 Tap;
     if (CurrentGesture & (GESTURE_TAP))
     {
         Tap.x = MousePosition.x;
@@ -65,7 +86,6 @@ void BoxManipulation(u32* Total, u32 CurrentGesture,Vector2 MousePosition, Recta
     {
         if (CurrentGesture & (GESTURE_DRAG|GESTURE_HOLD))
         {
-
             // Down-Right
             if ((MousePosition.x >= Tap.x) && (MousePosition.y >= Tap.y))
             {   
@@ -100,40 +120,24 @@ void BoxManipulation(u32* Total, u32 CurrentGesture,Vector2 MousePosition, Recta
             }
         }
     }
-
+    // printf("BBox: %f\n",BBox->width);
+    // printf("BBoxarray: %f\n",Bboxes[CurrentBbox].width);
     if ((PrevGesture & (GESTURE_DRAG|GESTURE_HOLD)) && (CurrentGesture == (GESTURE_NONE)))
     {
         CurrentBbox += 1;
-        *Total += 1;
+        Total += 1;
     }
     PrevGesture = CurrentGesture;
+
+    return(Total);
 }
-
-// internal
-// void SaveBboxes(Rectangle BbboxArray[])
-// {
-
-// }
-
-struct zoom
-{
-    f32 Strenght;
-    Vector2 Position;
-};
-
-// struct framebboxes
-// {
-//     u32 n;
-//     Rectangle bboxes[2];
-// };
-
 
 int main()
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "AnnRay");
 
-    // SetTargetFPS(60);   
+    SetTargetFPS(240);   
     const char *FolderPath = TEST_PIC;
     Texture CurrentTexture = LoadTexture(FolderPath);
     f32 TextureRatio = (float)CurrentTexture.height/CurrentTexture.width;
@@ -148,8 +152,9 @@ int main()
     zoom Zoom;
     Zoom.Strenght = 1.0f;
     Zoom.Position = {0.0f,0.0f};
-    Rectangle Bboxes[10] = {};
-    u32 TotalBbox = 0;
+    bbox Bboxes[10] = {};
+    u32 TotalBbox = 1;
+    u32 CurrentLabel = 0;
 
     while(!WindowShouldClose())
     {   
@@ -159,63 +164,117 @@ int main()
         u32 ScreenWidth = GetScreenWidth();
         u32 ScreenHeight = GetScreenHeight();
 
-        f32 FullImageDisplayWidth = ScreenWidth > PANELWIDTH ? ScreenWidth - PANELWIDTH : 0;
-        f32 FullImageDisplayHeight = ScreenHeight;
-
-        f32 ImageDisplayWidth = FullImageDisplayWidth - IMAGEDISPLAYSIDEGAP;
-        f32 ImageDisplayHeight = ImageDisplayWidth*TextureRatio;
-
-        Rectangle ImageDisplayRec = {PANELWIDTH + IMAGEDISPLAYSIDEGAP/2,FullImageDisplayHeight/2 - ImageDisplayHeight/2,ImageDisplayWidth,ImageDisplayHeight};
+        f32 dt = GetFrameTime();
 
         BeginDrawing();
+
             ClearBackground(GRAY);
 
-            DrawRectangle(0,0,PANELWIDTH,ScreenHeight,BLACK);
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-            if (IsKeyPressed(KEY_W))
+// Inside Lateral Menu Stuff
+            if (IsKeyReleased(KEY_ONE))
             {
-                Zoom.Strenght += 0.1;
+                CurrentLabel = 0;
             }
-            if (IsKeyPressed(KEY_S))
+            else if (IsKeyReleased(KEY_TWO))
             {
-                Zoom.Strenght -= 0.1;
+                CurrentLabel = 1;
             }
-            if (IsKeyPressed(KEY_LEFT))
+            else if (IsKeyReleased(KEY_THREE))
             {
-                Zoom.Position.x -= 0.01;
+                CurrentLabel = 2;
             }
-            if (IsKeyPressed(KEY_RIGHT))
+            else if (IsKeyReleased(KEY_FOUR))
             {
-                Zoom.Position.x += 0.01;
+                CurrentLabel = 3;
             }
-            if (IsKeyPressed(KEY_UP))
+            else if (IsKeyReleased(KEY_FIVE))
             {
-                Zoom.Position.y -= 0.01;
+                CurrentLabel = 4;
             }
-            if (IsKeyPressed(KEY_DOWN))
+            else if (IsKeyReleased(KEY_SIX))
             {
-                Zoom.Position.y += 0.01;
+                CurrentLabel = 5;
             }
+
+            DrawRectangle(0,0,PANELWIDTH,ScreenHeight,BLACK);
+            // int active[ArrayCount(Labels)];
+            int active;
             
+            for (u32 LabelId = 0; LabelId < ArrayCount(Labels);  ++LabelId)
+            {   
+                u32 StrWidth = MeasureText(Labels[LabelId],10) + 20;
+                GuiToggleGroup((Rectangle){0,120.f + 15.f*LabelId,(float)StrWidth,10},"",&active);
+                // GuiToggleGroup((Rectangle){0,120.f + 15.f*LabelId,(float)StrWidth,10},"",&active[LabelId]);
+                // GuiToggle((Rectangle){0,120.f + 15.f*LabelId,(float)StrWidth,10},"",&active[LabelId]);
+                DrawText(Labels[LabelId], 10, 120 + 15*LabelId, 10, BLACK);
+                DrawRectangle(StrWidth,120 + 15*LabelId,10,10,LabelsColors[LabelId]);
+            }
+            if (CheckCollisionPointRec(MousePosition,(Rectangle){0,0,PANELWIDTH,(float)ScreenHeight}))
+            {
+
+            }
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+
+// Inside Image Display Stuff
+            f32 FullImageDisplayWidth = ScreenWidth > PANELWIDTH ? ScreenWidth - PANELWIDTH : 0;
+            f32 FullImageDisplayHeight = ScreenHeight;
+
+            f32 ImageDisplayWidth = FullImageDisplayWidth - IMAGEDISPLAYSIDEGAP;
+            f32 ImageDisplayHeight = ImageDisplayWidth*TextureRatio;
+
             f32 w = (float)CurrentTexture.width;
             f32 h = (float)CurrentTexture.height;
-            // printf("zoom: %f\n",Zoom.Strenght);
+
             Rectangle TextureRec = {Zoom.Position.x*w,Zoom.Position.y*h,w/Zoom.Strenght,h/Zoom.Strenght};
+            Rectangle ImageDisplayRec = {PANELWIDTH + IMAGEDISPLAYSIDEGAP/2,FullImageDisplayHeight/2 - ImageDisplayHeight/2,ImageDisplayWidth,ImageDisplayHeight};
+
             DrawTexturePro(CurrentTexture,TextureRec,ImageDisplayRec,(Vector2){0,0},0,WHITE);
+            
+            if (IsKeyDown(KEY_W))
+            {
+                Zoom.Strenght += 0.9*dt;
+            }
+            if (IsKeyDown(KEY_S))
+            {
+                Zoom.Strenght -= 0.9*dt;
+            }
+            if (IsKeyDown(KEY_LEFT))
+            {
+                Zoom.Position.x -= 0.5*dt;
+            }
+            if (IsKeyDown(KEY_RIGHT))
+            {
+                Zoom.Position.x += 0.5*dt;
+            }
+            if (IsKeyDown(KEY_UP))
+            {
+                Zoom.Position.y -= 0.5*dt;
+            }
+            if (IsKeyDown(KEY_DOWN))
+            {
+                Zoom.Position.y += 0.5*dt;
+            }
 
             if (CheckCollisionPointRec(MousePosition,(Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}))
             {
-                DrawLineEx((Vector2){MousePosition.x + FullImageDisplayWidth,MousePosition.y}, MousePosition - (Vector2){MousePosition.x - PANELWIDTH,0}, 2, WHITE);
-                DrawLineEx((Vector2){MousePosition.x,MousePosition.y + FullImageDisplayHeight}, MousePosition - (Vector2){0,MousePosition.y}, 2, WHITE);
-                BoxManipulation(&TotalBbox,CurrentGesture,MousePosition,Bboxes);
+                DrawLineEx((Vector2){MousePosition.x + FullImageDisplayWidth,MousePosition.y}, MousePosition - (Vector2){MousePosition.x - PANELWIDTH,0}, 2, LabelsColors[CurrentLabel]);
+                DrawLineEx((Vector2){MousePosition.x,MousePosition.y + FullImageDisplayHeight}, MousePosition - (Vector2){0,MousePosition.y}, 2, LabelsColors[CurrentLabel]);
+                // Maybe this function is a bad idea and we should inline it
+                TotalBbox = BoxManipulation(TotalBbox,CurrentGesture,CurrentLabel,MousePosition,Bboxes);
+                
                 BeginScissorMode(ImageDisplayRec.x, ImageDisplayRec.y,ImageDisplayRec.width,ImageDisplayRec.height);
-                printf("total: %u\n", TotalBbox);
                 for (u32 BoxId = 0; BoxId < TotalBbox; ++BoxId)
                 {
-                    DrawRectangleLinesEx(Bboxes[BoxId],2,RED);
+                    DrawRectangleLinesEx(Bboxes[BoxId].Box,2,LabelsColors[Bboxes[BoxId].Label]);
                 }
                 EndScissorMode();
             }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
+
 
 #if TESTTHUMB
             DrawThumnails(PreviewTextures,PathList);
