@@ -8,7 +8,6 @@
 #include <assert.h>
 #include <string.h>
 
-
 #include "raylib.h"
 
 #define RAYGUI_IMPLEMENTATION
@@ -66,6 +65,48 @@ void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
             Texture *texture = PreviewTextures + PathIndex;
             DrawTexturePro(*texture, (Rectangle){0,0,128,128},(Rectangle){0 + 110.f*PathIndex,0,100,100},(Vector2){0,0},0,WHITE);
         }
+}
+
+internal const
+void DrawSegmentedHorizontalLine(f32 startPosX, f32 Y, f32 endPosX, Color color)
+{   
+    const u32 gap = 4;
+    const f32 SegLen = 12;
+    f32 Len = endPosX - startPosX;
+    u32 NSeg = (u32)ceil(Len/SegLen + gap);
+    for (u32 Seg = 0; Seg < NSeg; ++Seg)
+    {
+        f32 start = startPosX + Seg*(SegLen + gap) - SegLen/2;
+        f32 end = start + SegLen;
+        DrawLineEx({start,Y},{end,Y},2,color);
+    }
+}
+
+internal const
+void DrawSegmentedLines(f32 X, f32 Y, f32 W, f32 H, Color color)
+{   
+    const u32 gap = 4;
+    const f32 SegLen = 12;
+
+    f32 LenX = W - PANELWIDTH;
+    u32 NSegX = (u32)ceil(LenX/SegLen + gap);
+
+    for (u32 Seg = 0; Seg < NSegX; ++Seg)
+    {
+        f32 start = PANELWIDTH + Seg*(SegLen + gap) - SegLen/2;
+        f32 end = start + SegLen;
+        DrawLineEx({start,Y},{end,Y},2,color);
+    }
+
+    f32 LenY = H - 0;
+    u32 NSegY = (u32)ceil(LenY/SegLen + gap);
+
+    for (u32 Seg = 0; Seg < NSegY; ++Seg)
+    {
+        f32 start = 0 + Seg*(SegLen + gap) - SegLen/2;
+        f32 end = start + SegLen;
+        DrawLineEx({X,start},{X,end},2,color);
+    }
 }
 
 internal inline
@@ -137,7 +178,8 @@ int main()
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "AnnRay");
 
-    SetTargetFPS(240);   
+
+    SetTargetFPS(480);   
     const char *FolderPath = TEST_PIC;
     Texture CurrentTexture = LoadTexture(FolderPath);
     f32 TextureRatio = (float)CurrentTexture.height/CurrentTexture.width;
@@ -158,6 +200,7 @@ int main()
 
     while(!WindowShouldClose())
     {   
+
         Vector2 MousePosition = GetMousePosition();
         u32 CurrentGesture = GetGestureDetected();
 
@@ -173,47 +216,55 @@ int main()
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
 // Inside Lateral Menu Stuff
+
+            DrawRectangle(0,0,PANELWIDTH,ScreenHeight,BLACK);
+
+            int Active;
+            GuiToggleGroup((Rectangle){0,120,150,20},TextJoin(Labels,ArrayCount(Labels),"\n"),&Active);
+            CurrentLabel = Active;
+            for (u32 LabelId = 0; LabelId < ArrayCount(Labels);  ++LabelId)
+            {   
+                DrawRectangle(140,120 + 22*LabelId,10,20,LabelsColors[LabelId]);
+            }
+
             if (IsKeyReleased(KEY_ONE))
             {
                 CurrentLabel = 0;
+                Active = 0;
             }
             else if (IsKeyReleased(KEY_TWO))
             {
                 CurrentLabel = 1;
+                Active = 1;
+
             }
             else if (IsKeyReleased(KEY_THREE))
             {
                 CurrentLabel = 2;
+                Active = 2;
+
             }
             else if (IsKeyReleased(KEY_FOUR))
             {
                 CurrentLabel = 3;
+                Active = 3;
+
             }
             else if (IsKeyReleased(KEY_FIVE))
             {
                 CurrentLabel = 4;
+                Active = 4;
+
             }
             else if (IsKeyReleased(KEY_SIX))
             {
                 CurrentLabel = 5;
+                Active = 5;
             }
 
-            DrawRectangle(0,0,PANELWIDTH,ScreenHeight,BLACK);
-            // int active[ArrayCount(Labels)];
-            int active;
-            
-            for (u32 LabelId = 0; LabelId < ArrayCount(Labels);  ++LabelId)
-            {   
-                u32 StrWidth = MeasureText(Labels[LabelId],10) + 20;
-                GuiToggleGroup((Rectangle){0,120.f + 15.f*LabelId,(float)StrWidth,10},"",&active);
-                // GuiToggleGroup((Rectangle){0,120.f + 15.f*LabelId,(float)StrWidth,10},"",&active[LabelId]);
-                // GuiToggle((Rectangle){0,120.f + 15.f*LabelId,(float)StrWidth,10},"",&active[LabelId]);
-                DrawText(Labels[LabelId], 10, 120 + 15*LabelId, 10, BLACK);
-                DrawRectangle(StrWidth,120 + 15*LabelId,10,10,LabelsColors[LabelId]);
-            }
             if (CheckCollisionPointRec(MousePosition,(Rectangle){0,0,PANELWIDTH,(float)ScreenHeight}))
             {
-
+                SetMouseCursor(MOUSE_CURSOR_DEFAULT);
             }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
@@ -261,18 +312,22 @@ int main()
 
             if (CheckCollisionPointRec(MousePosition,(Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}))
             {
-                DrawLineEx((Vector2){MousePosition.x + FullImageDisplayWidth,MousePosition.y}, MousePosition - (Vector2){MousePosition.x - PANELWIDTH,0}, 2, LabelsColors[CurrentLabel]);
-                DrawLineEx((Vector2){MousePosition.x,MousePosition.y + FullImageDisplayHeight}, MousePosition - (Vector2){0,MousePosition.y}, 2, LabelsColors[CurrentLabel]);
+                SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
+                DrawSegmentedLines(MousePosition.x,MousePosition.y,ScreenWidth,ScreenHeight,LabelsColors[CurrentLabel]);
+
                 // Maybe this function is a bad idea and we should inline it
                 TotalBbox = BoxManipulation(TotalBbox,CurrentGesture,CurrentLabel,MousePosition,Bboxes);
                 
-                BeginScissorMode(ImageDisplayRec.x, ImageDisplayRec.y,ImageDisplayRec.width,ImageDisplayRec.height);
-                for (u32 BoxId = 0; BoxId < TotalBbox; ++BoxId)
-                {
-                    DrawRectangleLinesEx(Bboxes[BoxId].Box,2,LabelsColors[Bboxes[BoxId].Label]);
-                }
-                EndScissorMode();
             }
+
+            BeginScissorMode(ImageDisplayRec.x, ImageDisplayRec.y,ImageDisplayRec.width,ImageDisplayRec.height);
+            for (u32 BoxId = 0; BoxId < TotalBbox; ++BoxId)
+            {
+                DrawRectangleLinesEx(Bboxes[BoxId].Box,2,LabelsColors[Bboxes[BoxId].Label]);
+            }
+            EndScissorMode();
+            // GuiDrawIcon(ICON_TARGET_SMALL,MousePosition.x-20,MousePosition.y-20,2,WHITE);
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
 
 
