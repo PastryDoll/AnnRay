@@ -18,7 +18,7 @@
 
 #define TEST_FOLDER_PNG "/Users/caio/Desktop/Personal/CppTests/AnnRay/images_samplepng/"
 #define TEST_FOLDER_JPG "/Users/caio/Desktop/Personal/CppTests/AnnRay/test_material/images_sample"
-#define TEST_PIC "/Users/caio/Desktop/Personal/CppTests/AnnRay/test_material/images_sample/DJI_0325.JPG"
+#define TEST_PIC "DJI_0325.JPG"
 
 #define SCREEN_WIDTH 1080
 #define SCREEN_HEIGHT 720
@@ -43,44 +43,44 @@ struct zoom
     Vector2 Position;
 };
 
-internal
-void GenerateThumbnails(Image PreviewImages[], Texture PreviewTextures[], FilePathList PathList)
-{   
-    for (u32 PathIndex = 0; PathIndex < PathList.count; ++PathIndex)
-        {
-            char *Path = *(PathList.paths + PathIndex);
-            PreviewImages[PathIndex] = LoadImage(Path);
-            ImageResize(&PreviewImages[PathIndex],128,128);
-            PreviewTextures[PathIndex] = LoadTextureFromImage(PreviewImages[PathIndex]);
-            UnloadImage(PreviewImages[PathIndex]);
-        }
-    return;
-}
-
-internal
-void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
-{
-    for (u32 PathIndex = 0; PathIndex < PathList.count; ++PathIndex)
-        {   
-            Texture *texture = PreviewTextures + PathIndex;
-            DrawTexturePro(*texture, (Rectangle){0,0,128,128},(Rectangle){0 + 110.f*PathIndex,0,100,100},(Vector2){0,0},0,WHITE);
-        }
-}
-
 internal const
-void DrawSegmentedHorizontalLine(f32 startPosX, f32 Y, f32 endPosX, Color color)
-{   
-    const u32 gap = 4;
-    const f32 SegLen = 12;
-    f32 Len = endPosX - startPosX;
-    u32 NSeg = (u32)ceil(Len/SegLen + gap);
-    for (u32 Seg = 0; Seg < NSeg; ++Seg)
-    {
-        f32 start = startPosX + Seg*(SegLen + gap) - SegLen/2;
-        f32 end = start + SegLen;
-        DrawLineEx({start,Y},{end,Y},2,color);
+void SaveDataToFile(char *FileName, bbox *Boxes, u32 NumBoxes)
+{
+    FILE *file = fopen(FileName, "wb");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
     }
+
+    // Write bounding boxes to file in binary format
+    fwrite(Boxes, sizeof(BoundingBox), NumBoxes, file);
+
+    fclose(file);
 }
+
+// internal
+// void GenerateThumbnails(Image PreviewImages[], Texture PreviewTextures[], FilePathList PathList)
+// {   
+//     for (u32 PathIndex = 0; PathIndex < PathList.count; ++PathIndex)
+//         {
+//             char *Path = *(PathList.paths + PathIndex);
+//             PreviewImages[PathIndex] = LoadImage(Path);
+//             ImageResize(&PreviewImages[PathIndex],128,128);
+//             PreviewTextures[PathIndex] = LoadTextureFromImage(PreviewImages[PathIndex]);
+//             UnloadImage(PreviewImages[PathIndex]);
+//         }
+//     return;
+// }
+
+// internal
+// void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
+// {
+//     for (u32 PathIndex = 0; PathIndex < PathList.count; ++PathIndex)
+//         {   
+//             Texture *texture = PreviewTextures + PathIndex;
+//             DrawTexturePro(*texture, (Rectangle){0,0,128,128},(Rectangle){0 + 110.f*PathIndex,0,100,100},(Vector2){0,0},0,WHITE);
+//         }
+// }
 
 internal const
 void DrawSegmentedLines(f32 X, f32 Y, f32 W, f32 H, Color color)
@@ -116,7 +116,7 @@ u32 BoxManipulation(u32 Total, u32 CurrentGesture, u32 CurrentLabel, Vector2 Mou
     internal u32 CurrentBbox = 0;
     Rectangle *BBox = &Bboxes[CurrentBbox].Box;
     Bboxes[CurrentBbox].Label = CurrentLabel;
-    internal Vector2 Tap;
+    internal Vector2 Tap = {};
 
     if (CurrentGesture & (GESTURE_TAP))
     {
@@ -161,8 +161,6 @@ u32 BoxManipulation(u32 Total, u32 CurrentGesture, u32 CurrentLabel, Vector2 Mou
             }
         }
     }
-    // printf("BBox: %f\n",BBox->width);
-    // printf("BBoxarray: %f\n",Bboxes[CurrentBbox].width);
     if ((PrevGesture & (GESTURE_DRAG|GESTURE_HOLD)) && (CurrentGesture == (GESTURE_NONE)))
     {
         CurrentBbox += 1;
@@ -178,11 +176,16 @@ int main()
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "AnnRay");
 
+    const char *ImagePath = TextFormat("%s/%s",TEST_FOLDER_JPG, TEST_PIC);
+    Texture CurrentTexture = LoadTexture(ImagePath);
+    
+    s32 count = 0;
+    const char *ImageName = TextSplit(TEST_PIC,'.',&count)[0];
+    // const char *AnnPath = TextFormat("%s/%s",TEST_FOLDER_JPG, TEST_PIC);
 
-    SetTargetFPS(480);   
-    const char *FolderPath = TEST_PIC;
-    Texture CurrentTexture = LoadTexture(FolderPath);
     f32 TextureRatio = (float)CurrentTexture.height/CurrentTexture.width;
+    SetTargetFPS(480);   
+
 
 #if TESTTHUMB
     const char *FolderPath = TEST_FOLDER_PNG;
@@ -195,11 +198,12 @@ int main()
     Zoom.Strenght = 1.0f;
     Zoom.Position = {0.0f,0.0f};
     bbox Bboxes[10] = {};
-    u32 TotalBbox = 1;
     u32 CurrentLabel = 0;
+    u32 TotalBbox = 1;
 
     while(!WindowShouldClose())
     {   
+        printf("IMAGE NAME: %s\n", ImageName);
 
         Vector2 MousePosition = GetMousePosition();
         u32 CurrentGesture = GetGestureDetected();
@@ -219,9 +223,10 @@ int main()
 
             DrawRectangle(0,0,PANELWIDTH,ScreenHeight,BLACK);
 
-            int Active;
+            internal s32 Active = {};
             GuiToggleGroup((Rectangle){0,120,150,20},TextJoin(Labels,ArrayCount(Labels),"\n"),&Active);
             CurrentLabel = Active;
+
             for (u32 LabelId = 0; LabelId < ArrayCount(Labels);  ++LabelId)
             {   
                 DrawRectangle(140,120 + 22*LabelId,10,20,LabelsColors[LabelId]);
@@ -314,7 +319,6 @@ int main()
             {
                 SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
                 DrawSegmentedLines(MousePosition.x,MousePosition.y,ScreenWidth,ScreenHeight,LabelsColors[CurrentLabel]);
-
                 // Maybe this function is a bad idea and we should inline it
                 TotalBbox = BoxManipulation(TotalBbox,CurrentGesture,CurrentLabel,MousePosition,Bboxes);
                 
@@ -326,8 +330,6 @@ int main()
                 DrawRectangleLinesEx(Bboxes[BoxId].Box,2,LabelsColors[Bboxes[BoxId].Label]);
             }
             EndScissorMode();
-            // GuiDrawIcon(ICON_TARGET_SMALL,MousePosition.x-20,MousePosition.y-20,2,WHITE);
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
 
 

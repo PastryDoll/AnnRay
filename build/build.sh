@@ -5,7 +5,7 @@
 MAIN_FILE=../src/rlib_annray.cpp 
 OUTPUT_FILE=AnnRay
 
-FLAGS="-g -std=c++11 -O3 -Wall -Wno-deprecated-declarations -Wno-unused-but-set-variable"
+FLAGS="-g -std=c++11 -O1 -Wall -Wno-deprecated-declarations -Wno-unused-but-set-variable"
 
 FRAMEWORKS="-framework CoreVideo -framework IOKit -framework Cocoa 
 -framework GLUT -framework OpenGL"
