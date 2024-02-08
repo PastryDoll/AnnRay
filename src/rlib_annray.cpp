@@ -16,8 +16,9 @@
 #include "rlib_annray.h"
 #include "annray_math.h"
 
-#define TEST_FOLDER_PNG "/Users/caio/Desktop/Personal/CppTests/AnnRay/images_samplepng/"
-#define TEST_FOLDER_JPG "/Users/caio/Desktop/Personal/CppTests/AnnRay/test_material/images_sample"
+#define TEST_FOLDER_PNG "../images_samplepng/"
+#define TEST_FOLDER_JPG "../test_material/images_sample"
+#define PROJECT_FOLDER "../project"
 #define TEST_PIC "DJI_0325.JPG"
 
 #define SCREEN_WIDTH 1080
@@ -44,17 +45,35 @@ struct zoom
 };
 
 internal const
-void SaveDataToFile(char *FileName, bbox *Boxes, u32 NumBoxes)
+void SaveDataToFile(const char *FileName, bbox *Boxes, u32 NumBoxes)
 {
     FILE *file = fopen(FileName, "wb");
     if (file == NULL) {
         perror("Error opening file");
         return;
     }
+    printf("%s\n",FileName);
 
-    // Write bounding boxes to file in binary format
     fwrite(Boxes, sizeof(BoundingBox), NumBoxes, file);
 
+    fclose(file);
+}
+
+internal 
+void ReadInMemoryAnn(const char *FileName, u32 NumBoxes)
+{
+    FILE *file;
+    file = fopen(FileName, "rb");
+    if (file == NULL) {
+        perror("Error opening file");
+    }
+    bbox Boxes[NumBoxes];
+    fread(Boxes, sizeof(bbox), NumBoxes, file);
+
+    for (u32 BoxId = 0; BoxId < NumBoxes; ++BoxId)
+    {  
+        printf("id: %u,x: %f,y: %f,w: %f,h: %f,label: %u\n", BoxId,Boxes[BoxId].Box.x,Boxes[BoxId].Box.y,Boxes[BoxId].Box.width,Boxes[BoxId].Box.height, Boxes[BoxId].Label);
+    }
     fclose(file);
 }
 
@@ -110,7 +129,7 @@ void DrawSegmentedLines(f32 X, f32 Y, f32 W, f32 H, Color color)
 }
 
 internal inline
-u32 BoxManipulation(u32 Total, u32 CurrentGesture, u32 CurrentLabel, Vector2 MousePosition, bbox Bboxes[])
+u32 BoxManipulation(u32 Total, u32 CurrentGesture, u32 CurrentLabel, Vector2 MousePosition, bbox Bboxes[], const char* AnnPath)
 {
     internal u32 PrevGesture = 3;
     internal u32 CurrentBbox = 0;
@@ -161,10 +180,13 @@ u32 BoxManipulation(u32 Total, u32 CurrentGesture, u32 CurrentLabel, Vector2 Mou
             }
         }
     }
-    if ((PrevGesture & (GESTURE_DRAG|GESTURE_HOLD)) && (CurrentGesture == (GESTURE_NONE)))
+    // If one goes too fast than the prevGesture can be also swipedown, not juts drag or hold.
+    if (BBox->width > 0.1 && ~(PrevGesture & (GESTURE_NONE)) && (CurrentGesture == (GESTURE_NONE)) && Total <= 10)
     {
         CurrentBbox += 1;
         Total += 1;
+        SaveDataToFile(AnnPath,Bboxes,Total);
+        ReadInMemoryAnn(AnnPath, Total);
     }
     PrevGesture = CurrentGesture;
 
@@ -181,10 +203,12 @@ int main()
     
     s32 count = 0;
     const char *ImageName = TextSplit(TEST_PIC,'.',&count)[0];
-    // const char *AnnPath = TextFormat("%s/%s",TEST_FOLDER_JPG, TEST_PIC);
+    const char *AnnPathTmp = TextFormat("%s/%s.ann",PROJECT_FOLDER, ImageName);
+    char* AnnPath = (char*)malloc(strlen(AnnPathTmp) + 1);
+    strcpy(AnnPath,AnnPathTmp);
 
     f32 TextureRatio = (float)CurrentTexture.height/CurrentTexture.width;
-    SetTargetFPS(480);   
+    SetTargetFPS(600);   
 
 
 #if TESTTHUMB
@@ -199,12 +223,10 @@ int main()
     Zoom.Position = {0.0f,0.0f};
     bbox Bboxes[10] = {};
     u32 CurrentLabel = 0;
-    u32 TotalBbox = 1;
+    u32 TotalBbox = 0;
 
     while(!WindowShouldClose())
     {   
-        printf("IMAGE NAME: %s\n", ImageName);
-
         Vector2 MousePosition = GetMousePosition();
         u32 CurrentGesture = GetGestureDetected();
 
@@ -320,12 +342,12 @@ int main()
                 SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
                 DrawSegmentedLines(MousePosition.x,MousePosition.y,ScreenWidth,ScreenHeight,LabelsColors[CurrentLabel]);
                 // Maybe this function is a bad idea and we should inline it
-                TotalBbox = BoxManipulation(TotalBbox,CurrentGesture,CurrentLabel,MousePosition,Bboxes);
+                TotalBbox = BoxManipulation(TotalBbox,CurrentGesture,CurrentLabel,MousePosition,Bboxes,AnnPath);
                 
             }
 
             BeginScissorMode(ImageDisplayRec.x, ImageDisplayRec.y,ImageDisplayRec.width,ImageDisplayRec.height);
-            for (u32 BoxId = 0; BoxId < TotalBbox; ++BoxId)
+            for (u32 BoxId = 0; BoxId < TotalBbox + 1; ++BoxId)
             {
                 DrawRectangleLinesEx(Bboxes[BoxId].Box,2,LabelsColors[Bboxes[BoxId].Label]);
             }
