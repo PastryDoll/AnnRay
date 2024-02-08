@@ -38,11 +38,12 @@ enum disp_mode
     DispMode_manipulation,
 };
 
-enum colision_state
+enum box_hit_state
 {
-    NoCollision,
-    InsideBox,
-    LateralRight,
+    NoHit,
+    InsideHit,
+    HorizontalHit,
+    VerticalHit
 };
 
 struct bbox
@@ -142,40 +143,70 @@ void DrawSegmentedLines(f32 X, f32 Y, f32 W, f32 H, Color color)
 }
 
 internal inline
-void BoxManipulation(u32 Total, Vector2 MousePosition, bbox Bboxes[])
+void BoxManipulation(u32 Total, u32 CurrentGesture, Vector2 MousePosition, bbox Bboxes[])
 {
-    // s32 CollisionId = -1;
-    colision_state CollisionState = NoCollision;
+    box_hit_state CollisionState = NoHit;
     f32 e = 5;
+    s32 CollisionId = -1;
 
     for (u32 BoxId = 0; BoxId < Total; ++BoxId)
     {
         if (CheckCollisionPointRec(MousePosition,Bboxes[BoxId].Box))
         {
-            CollisionState = InsideBox;
+            CollisionState = InsideHit;
+            CollisionId = BoxId;
+
+            // Right Logic || Left Logic
             if  ((MousePosition.x > (Bboxes[BoxId].Box.x + Bboxes[BoxId].Box.width - e)) 
-                || ((MousePosition.x > (Bboxes[BoxId].Box.x)) && (MousePosition.x < (Bboxes[BoxId].Box.x + e))))
+                || (MousePosition.x < (Bboxes[BoxId].Box.x + e)))
             {
-                CollisionState = LateralRight;
+                CollisionState = HorizontalHit;
             }
+            // Botton Logic || Top Logic
+            else if ((MousePosition.y > (Bboxes[BoxId].Box.y + Bboxes[BoxId].Box.height - e)) 
+                || (MousePosition.y < (Bboxes[BoxId].Box.y + e)))
+            {
+                CollisionState = VerticalHit;
+            }
+            
             break;
         }
     }
+
     switch (CollisionState)
     {
-        case NoCollision:
+        case NoHit:
         {
             SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
         break;
         }
-        case InsideBox:
-        {
-            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        case InsideHit:
+        {   
+            SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
+            internal Vector2 Tap = {};
+            if (CurrentGesture & (GESTURE_TAP))
+            {
+                Tap.x = MousePosition.x;
+                Tap.y = MousePosition.y;
+            }
+            else if (CurrentGesture & (GESTURE_DRAG))
+            {
+                Bboxes[CollisionId].Box.x += MousePosition.x - Tap.x;
+                Bboxes[CollisionId].Box.y += MousePosition.y - Tap.y;
+                Tap.x = MousePosition.x;
+                Tap.y = MousePosition.y;
+            }
+
         break;
         }
-        case LateralRight:
+        case HorizontalHit:
         {
             SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
+        break;
+        }
+        case VerticalHit:
+        {
+            SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
         break;
         }
     }
@@ -415,7 +446,7 @@ int main()
                     }
                     case DispMode_manipulation:
                     {
-                        BoxManipulation(TotalBbox, MousePosition, Bboxes);
+                        BoxManipulation(TotalBbox, CurrentGesture, MousePosition, Bboxes);
                     break;
                     }
                 }
