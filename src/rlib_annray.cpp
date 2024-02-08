@@ -32,6 +32,19 @@
 const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME};
 const global char *Labels[] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
 
+enum disp_mode
+{
+    DispMode_creation,
+    DispMode_manipulation,
+};
+
+enum colision_state
+{
+    NoCollision,
+    InsideBox,
+    LateralRight,
+};
+
 struct bbox
 {
     u32 Label;
@@ -129,8 +142,49 @@ void DrawSegmentedLines(f32 X, f32 Y, f32 W, f32 H, Color color)
 }
 
 internal inline
-u32 BoxManipulation(u32 Total, u32 CurrentGesture, u32 CurrentLabel, Vector2 MousePosition, bbox Bboxes[], const char* AnnPath)
+void BoxManipulation(u32 Total, Vector2 MousePosition, bbox Bboxes[])
 {
+    // s32 CollisionId = -1;
+    colision_state CollisionState = NoCollision;
+    f32 e = 5;
+
+    for (u32 BoxId = 0; BoxId < Total; ++BoxId)
+    {
+        if (CheckCollisionPointRec(MousePosition,Bboxes[BoxId].Box))
+        {
+            CollisionState = InsideBox;
+            if  ((MousePosition.x > (Bboxes[BoxId].Box.x + Bboxes[BoxId].Box.width - e)) 
+                || ((MousePosition.x > (Bboxes[BoxId].Box.x)) && (MousePosition.x < (Bboxes[BoxId].Box.x + e))))
+            {
+                CollisionState = LateralRight;
+            }
+            break;
+        }
+    }
+    switch (CollisionState)
+    {
+        case NoCollision:
+        {
+            SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
+        break;
+        }
+        case InsideBox:
+        {
+            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        break;
+        }
+        case LateralRight:
+        {
+            SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
+        break;
+        }
+    }
+}
+
+internal inline
+u32 BoxCreation(u32 Total, u32 CurrentGesture, u32 CurrentLabel, Vector2 MousePosition, bbox Bboxes[], const char* AnnPath)
+{
+    SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
     internal u32 PrevGesture = 3;
     internal u32 CurrentBbox = 0;
     Rectangle *BBox = &Bboxes[CurrentBbox].Box;
@@ -206,6 +260,8 @@ int main()
     const char *AnnPathTmp = TextFormat("%s/%s.ann",PROJECT_FOLDER, ImageName);
     char* AnnPath = (char*)malloc(strlen(AnnPathTmp) + 1);
     strcpy(AnnPath,AnnPathTmp);
+
+    disp_mode DisplayMode = DispMode_creation;
 
     f32 TextureRatio = (float)CurrentTexture.height/CurrentTexture.width;
     SetTargetFPS(600);   
@@ -336,16 +392,34 @@ int main()
             {
                 Zoom.Position.y += 0.5*dt;
             }
+            if (IsKeyPressed(KEY_D))
+            {
+                DisplayMode = DispMode_manipulation;
+            }
+            else if (IsKeyPressed(KEY_B))
+            {
+                DisplayMode = DispMode_creation;
+            }
 
             if (CheckCollisionPointRec(MousePosition,(Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}))
             {
-                SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
                 DrawSegmentedLines(MousePosition.x,MousePosition.y,ScreenWidth,ScreenHeight,LabelsColors[CurrentLabel]);
-                // Maybe this function is a bad idea and we should inline it
-                TotalBbox = BoxManipulation(TotalBbox,CurrentGesture,CurrentLabel,MousePosition,Bboxes,AnnPath);
-                
-            }
 
+                switch (DisplayMode)
+                {
+                    case DispMode_creation:
+                    {
+                        // Maybe this function is a bad idea and we should inline it
+                        TotalBbox = BoxCreation(TotalBbox,CurrentGesture,CurrentLabel,MousePosition,Bboxes,AnnPath);
+                    break;
+                    }
+                    case DispMode_manipulation:
+                    {
+                        BoxManipulation(TotalBbox, MousePosition, Bboxes);
+                    break;
+                    }
+                }
+            }
             BeginScissorMode(ImageDisplayRec.x, ImageDisplayRec.y,ImageDisplayRec.width,ImageDisplayRec.height);
             for (u32 BoxId = 0; BoxId < TotalBbox + 1; ++BoxId)
             {
