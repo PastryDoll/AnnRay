@@ -50,6 +50,7 @@ struct bbox
 {
     u32 Label;
     Rectangle Box;
+    bool Selected;
 };
 
 struct zoom
@@ -146,7 +147,7 @@ internal inline
 void BoxManipulation(u32 Total, u32 CurrentGesture, Vector2 MousePosition, bbox Bboxes[])
 {
     box_hit_state CollisionState = NoHit;
-    f32 e = 5;
+    f32 e = 8;
     s32 CollisionId = -1;
 
     for (u32 BoxId = 0; BoxId < Total; ++BoxId)
@@ -182,19 +183,29 @@ void BoxManipulation(u32 Total, u32 CurrentGesture, Vector2 MousePosition, bbox 
         }
         case InsideHit:
         {   
-            SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
             internal Vector2 Tap = {};
             if (CurrentGesture & (GESTURE_TAP))
             {
+                SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
                 Tap.x = MousePosition.x;
                 Tap.y = MousePosition.y;
             }
             else if (CurrentGesture & (GESTURE_DRAG))
             {
+                SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
                 Bboxes[CollisionId].Box.x += MousePosition.x - Tap.x;
                 Bboxes[CollisionId].Box.y += MousePosition.y - Tap.y;
                 Tap.x = MousePosition.x;
                 Tap.y = MousePosition.y;
+            }
+            else if (CurrentGesture & (GESTURE_HOLD))
+            {
+                SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
+
+            }
+            else
+            {
+                SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
             }
 
         break;
@@ -213,13 +224,12 @@ void BoxManipulation(u32 Total, u32 CurrentGesture, Vector2 MousePosition, bbox 
 }
 
 internal inline
-u32 BoxCreation(u32 Total, u32 CurrentGesture, u32 CurrentLabel, Vector2 MousePosition, bbox Bboxes[], const char* AnnPath)
+u32 BoxCreation(u32 Total, u32 *CurrentBbox, u32 CurrentGesture, u32 CurrentLabel, Vector2 MousePosition, bbox Bboxes[], const char* AnnPath)
 {
     SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
     internal u32 PrevGesture = 3;
-    internal u32 CurrentBbox = 0;
-    Rectangle *BBox = &Bboxes[CurrentBbox].Box;
-    Bboxes[CurrentBbox].Label = CurrentLabel;
+    Rectangle *BBox = &Bboxes[Total].Box;
+    Bboxes[Total].Label = CurrentLabel;
     internal Vector2 Tap = {};
 
     if (CurrentGesture & (GESTURE_TAP))
@@ -268,7 +278,7 @@ u32 BoxCreation(u32 Total, u32 CurrentGesture, u32 CurrentLabel, Vector2 MousePo
     // If one goes too fast than the prevGesture can be also swipedown, not juts drag or hold.
     if (BBox->width > 0.1 && ~(PrevGesture & (GESTURE_NONE)) && (CurrentGesture == (GESTURE_NONE)) && Total <= 10)
     {
-        CurrentBbox += 1;
+        *CurrentBbox = Total;
         Total += 1;
         SaveDataToFile(AnnPath,Bboxes,Total);
         ReadInMemoryAnn(AnnPath, Total);
@@ -310,6 +320,7 @@ int main()
     Zoom.Position = {0.0f,0.0f};
     bbox Bboxes[10] = {};
     u32 CurrentLabel = 0;
+    u32 CurrentBbox = 0;
     u32 TotalBbox = 0;
 
     while(!WindowShouldClose())
@@ -391,13 +402,16 @@ int main()
             f32 ImageDisplayWidth = FullImageDisplayWidth - IMAGEDISPLAYSIDEGAP;
             f32 ImageDisplayHeight = ImageDisplayWidth*TextureRatio;
 
-            f32 w = (float)CurrentTexture.width;
-            f32 h = (float)CurrentTexture.height;
+            Rectangle ImageDisplayRec;
+            {
+                f32 w = (float)CurrentTexture.width;
+                f32 h = (float)CurrentTexture.height;
 
-            Rectangle TextureRec = {Zoom.Position.x*w,Zoom.Position.y*h,w/Zoom.Strenght,h/Zoom.Strenght};
-            Rectangle ImageDisplayRec = {PANELWIDTH + IMAGEDISPLAYSIDEGAP/2,FullImageDisplayHeight/2 - ImageDisplayHeight/2,ImageDisplayWidth,ImageDisplayHeight};
+                Rectangle TextureRec = {Zoom.Position.x*w,Zoom.Position.y*h,w/Zoom.Strenght,h/Zoom.Strenght};
+                ImageDisplayRec = {PANELWIDTH + IMAGEDISPLAYSIDEGAP/2,FullImageDisplayHeight/2 - ImageDisplayHeight/2,ImageDisplayWidth,ImageDisplayHeight};
+                DrawTexturePro(CurrentTexture,TextureRec,ImageDisplayRec,(Vector2){0,0},0,WHITE);\
+            }
 
-            DrawTexturePro(CurrentTexture,TextureRec,ImageDisplayRec,(Vector2){0,0},0,WHITE);
             
             if (IsKeyDown(KEY_W))
             {
@@ -441,7 +455,7 @@ int main()
                     case DispMode_creation:
                     {
                         // Maybe this function is a bad idea and we should inline it
-                        TotalBbox = BoxCreation(TotalBbox,CurrentGesture,CurrentLabel,MousePosition,Bboxes,AnnPath);
+                        TotalBbox = BoxCreation(TotalBbox,&CurrentBbox,CurrentGesture,CurrentLabel,MousePosition,Bboxes,AnnPath);
                     break;
                     }
                     case DispMode_manipulation:
@@ -452,10 +466,20 @@ int main()
                 }
             }
             BeginScissorMode(ImageDisplayRec.x, ImageDisplayRec.y,ImageDisplayRec.width,ImageDisplayRec.height);
-            for (u32 BoxId = 0; BoxId < TotalBbox + 1; ++BoxId)
-            {
-                DrawRectangleLinesEx(Bboxes[BoxId].Box,2,LabelsColors[Bboxes[BoxId].Label]);
-            }
+                for (u32 BoxId = 0; BoxId < TotalBbox + 1; ++BoxId)
+                {
+                    DrawRectangleLinesEx(Bboxes[BoxId].Box,2,LabelsColors[Bboxes[BoxId].Label]);
+                }
+                {
+                    u32 x = (f32)Bboxes[CurrentBbox].Box.x;
+                    u32 y = (f32)Bboxes[CurrentBbox].Box.y;
+                    u32 w = (f32)Bboxes[CurrentBbox].Box.width;
+                    u32 h = (f32)Bboxes[CurrentBbox].Box.height;
+                    DrawRectangle(x - 2,y - 2,6,6,RAYWHITE);
+                    DrawRectangle(x + w - 3,y - 2,6,6,RAYWHITE);
+                    DrawRectangle(x + w - 3,y + h - 3,6,6,RAYWHITE);
+                    DrawRectangle(x - 1,y + h - 3,6,6,RAYWHITE);
+                }
             EndScissorMode();
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
 
