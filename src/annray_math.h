@@ -1,3 +1,6 @@
+#define MAX(a, b) ((a)>(b)? (a) : (b))
+#define MIN(a, b) ((a)<(b)? (a) : (b))
+
 inline f32
 Pow(f32 A, f32 B)
 {

@@ -2,7 +2,7 @@
 
 # set -xe
 
-MAIN_FILE=../src/rlib_annray.cpp 
+MAIN_FILE=../src/rlib_annray.cpp
 OUTPUT_FILE=AnnRay
 
 FLAGS="-g -std=c++11 -O1 -Wall -Wno-deprecated-declarations -Wno-unused-but-set-variable"

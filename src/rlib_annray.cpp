@@ -14,7 +14,6 @@
 #include "raygui.h"
 
 #include "rlib_annray.h"
-#include "annray_math.h"
 
 #define TEST_FOLDER_PNG "../images_samplepng/"
 #define TEST_FOLDER_JPG "../test_material/images_sample"
@@ -24,40 +23,16 @@
 #define SCREEN_WIDTH 1080
 #define SCREEN_HEIGHT 720
 
+#define IMAGEDISPLAY_WIDTH 1080
+#define IMAGEDISPLAY_HEIGHT 720
+
 #define PANELWIDTH (float)280
 #define IMAGEDISPLAYSIDEGAP (float)32
 
+#include "annray_math.h"
+#include "rlib_annotation_menu.cpp"
+
 #define TESTTHUMB 0
-
-const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME};
-const global char *Labels[] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
-
-enum disp_mode
-{
-    DispMode_creation,
-    DispMode_manipulation,
-};
-
-enum box_hit_state
-{
-    NoHit,
-    InsideHit,
-    HorizontalHit,
-    VerticalHit
-};
-
-struct bbox
-{
-    u32 Label;
-    Rectangle Box;
-    bool Selected;
-};
-
-struct zoom
-{
-    f32 Strenght;
-    Vector2 Position;
-};
 
 internal const
 void SaveDataToFile(const char *FileName, bbox *Boxes, u32 NumBoxes)
@@ -305,7 +280,10 @@ int main()
     disp_mode DisplayMode = DispMode_creation;
 
     f32 TextureRatio = (float)CurrentTexture.height/CurrentTexture.width;
-    SetTargetFPS(600);   
+
+
+
+    // SetTargetFPS(600);   
 
 
 #if TESTTHUMB
@@ -333,163 +311,164 @@ int main()
 
         f32 dt = GetFrameTime();
 
-        BeginDrawing();
+        AnnotationPage();
+        // BeginDrawing();
 
-            ClearBackground(GRAY);
+            // ClearBackground(GRAY);
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-// Inside Lateral Menu Stuff
+// // Inside Lateral Menu Stuff
 
-            DrawRectangle(0,0,PANELWIDTH,ScreenHeight,BLACK);
+//             DrawRectangle(0,0,PANELWIDTH,ScreenHeight,BLACK);
 
-            internal s32 Active = {};
-            GuiToggleGroup((Rectangle){0,120,150,20},TextJoin(Labels,ArrayCount(Labels),"\n"),&Active);
-            CurrentLabel = Active;
+//             internal s32 Active = {};
+//             GuiToggleGroup((Rectangle){0,120,150,20},TextJoin(Labels,ArrayCount(Labels),"\n"),&Active);
+//             CurrentLabel = Active;
 
-            for (u32 LabelId = 0; LabelId < ArrayCount(Labels);  ++LabelId)
-            {   
-                DrawRectangle(140,120 + 22*LabelId,10,20,LabelsColors[LabelId]);
-            }
+//             for (u32 LabelId = 0; LabelId < ArrayCount(Labels);  ++LabelId)
+//             {   
+//                 DrawRectangle(140,120 + 22*LabelId,10,20,LabelsColors[LabelId]);
+//             }
 
-            if (IsKeyReleased(KEY_ONE))
-            {
-                CurrentLabel = 0;
-                Active = 0;
-            }
-            else if (IsKeyReleased(KEY_TWO))
-            {
-                CurrentLabel = 1;
-                Active = 1;
+//             if (IsKeyReleased(KEY_ONE))
+//             {
+//                 CurrentLabel = 0;
+//                 Active = 0;
+//             }
+//             else if (IsKeyReleased(KEY_TWO))
+//             {
+//                 CurrentLabel = 1;
+//                 Active = 1;
 
-            }
-            else if (IsKeyReleased(KEY_THREE))
-            {
-                CurrentLabel = 2;
-                Active = 2;
+//             }
+//             else if (IsKeyReleased(KEY_THREE))
+//             {
+//                 CurrentLabel = 2;
+//                 Active = 2;
 
-            }
-            else if (IsKeyReleased(KEY_FOUR))
-            {
-                CurrentLabel = 3;
-                Active = 3;
+//             }
+//             else if (IsKeyReleased(KEY_FOUR))
+//             {
+//                 CurrentLabel = 3;
+//                 Active = 3;
 
-            }
-            else if (IsKeyReleased(KEY_FIVE))
-            {
-                CurrentLabel = 4;
-                Active = 4;
+//             }
+//             else if (IsKeyReleased(KEY_FIVE))
+//             {
+//                 CurrentLabel = 4;
+//                 Active = 4;
 
-            }
-            else if (IsKeyReleased(KEY_SIX))
-            {
-                CurrentLabel = 5;
-                Active = 5;
-            }
+//             }
+//             else if (IsKeyReleased(KEY_SIX))
+//             {
+//                 CurrentLabel = 5;
+//                 Active = 5;
+//             }
 
-            if (CheckCollisionPointRec(MousePosition,(Rectangle){0,0,PANELWIDTH,(float)ScreenHeight}))
-            {
-                SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-            }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+//             if (CheckCollisionPointRec(MousePosition,(Rectangle){0,0,PANELWIDTH,(float)ScreenHeight}))
+//             {
+//                 SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+//             }
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-// Inside Image Display Stuff
-            f32 FullImageDisplayWidth = ScreenWidth > PANELWIDTH ? ScreenWidth - PANELWIDTH : 0;
-            f32 FullImageDisplayHeight = ScreenHeight;
+// // Inside Image Display Stuff
+//             f32 FullImageDisplayWidth = ScreenWidth > PANELWIDTH ? ScreenWidth - PANELWIDTH : 0;
+//             f32 FullImageDisplayHeight = ScreenHeight;
 
-            f32 ImageDisplayWidth = FullImageDisplayWidth - IMAGEDISPLAYSIDEGAP;
-            f32 ImageDisplayHeight = ImageDisplayWidth*TextureRatio;
+//             f32 ImageDisplayWidth = FullImageDisplayWidth - IMAGEDISPLAYSIDEGAP;
+//             f32 ImageDisplayHeight = ImageDisplayWidth*TextureRatio;
 
-            Rectangle ImageDisplayRec;
-            {
-                f32 w = (float)CurrentTexture.width;
-                f32 h = (float)CurrentTexture.height;
+//             Rectangle ImageDisplayRec;
+//             {
+//                 f32 w = (float)CurrentTexture.width;
+//                 f32 h = (float)CurrentTexture.height;
 
-                Rectangle TextureRec = {Zoom.Position.x*w,Zoom.Position.y*h,w/Zoom.Strenght,h/Zoom.Strenght};
-                ImageDisplayRec = {PANELWIDTH + IMAGEDISPLAYSIDEGAP/2,FullImageDisplayHeight/2 - ImageDisplayHeight/2,ImageDisplayWidth,ImageDisplayHeight};
-                DrawTexturePro(CurrentTexture,TextureRec,ImageDisplayRec,(Vector2){0,0},0,WHITE);\
-            }
+//                 Rectangle TextureRec = {Zoom.Position.x*w,Zoom.Position.y*h,w/Zoom.Strenght,h/Zoom.Strenght};
+//                 ImageDisplayRec = {PANELWIDTH + IMAGEDISPLAYSIDEGAP/2,FullImageDisplayHeight/2 - ImageDisplayHeight/2,ImageDisplayWidth,ImageDisplayHeight};
+//                 DrawTexturePro(CurrentTexture,TextureRec,ImageDisplayRec,(Vector2){0,0},0,WHITE);\
+//             }
 
             
-            if (IsKeyDown(KEY_W))
-            {
-                Zoom.Strenght += 0.9*dt;
-            }
-            if (IsKeyDown(KEY_S))
-            {
-                Zoom.Strenght -= 0.9*dt;
-            }
-            if (IsKeyDown(KEY_LEFT))
-            {
-                Zoom.Position.x -= 0.5*dt;
-            }
-            if (IsKeyDown(KEY_RIGHT))
-            {
-                Zoom.Position.x += 0.5*dt;
-            }
-            if (IsKeyDown(KEY_UP))
-            {
-                Zoom.Position.y -= 0.5*dt;
-            }
-            if (IsKeyDown(KEY_DOWN))
-            {
-                Zoom.Position.y += 0.5*dt;
-            }
-            if (IsKeyPressed(KEY_D))
-            {
-                DisplayMode = DispMode_manipulation;
-            }
-            else if (IsKeyPressed(KEY_B))
-            {
-                DisplayMode = DispMode_creation;
-            }
+//             if (IsKeyDown(KEY_W))
+//             {
+//                 Zoom.Strenght += 0.9*dt;
+//             }
+//             if (IsKeyDown(KEY_S))
+//             {
+//                 Zoom.Strenght -= 0.9*dt;
+//             }
+//             if (IsKeyDown(KEY_LEFT))
+//             {
+//                 Zoom.Position.x -= 0.5*dt;
+//             }
+//             if (IsKeyDown(KEY_RIGHT))
+//             {
+//                 Zoom.Position.x += 0.5*dt;
+//             }
+//             if (IsKeyDown(KEY_UP))
+//             {
+//                 Zoom.Position.y -= 0.5*dt;
+//             }
+//             if (IsKeyDown(KEY_DOWN))
+//             {
+//                 Zoom.Position.y += 0.5*dt;
+//             }
+//             if (IsKeyPressed(KEY_D))
+//             {
+//                 DisplayMode = DispMode_manipulation;
+//             }
+//             else if (IsKeyPressed(KEY_B))
+//             {
+//                 DisplayMode = DispMode_creation;
+//             }
 
-            if (CheckCollisionPointRec(MousePosition,(Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}))
-            {
-                DrawSegmentedLines(MousePosition.x,MousePosition.y,ScreenWidth,ScreenHeight,LabelsColors[CurrentLabel]);
+//             if (CheckCollisionPointRec(MousePosition,(Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}))
+//             {
+//                 DrawSegmentedLines(MousePosition.x,MousePosition.y,ScreenWidth,ScreenHeight,LabelsColors[CurrentLabel]);
 
-                switch (DisplayMode)
-                {
-                    case DispMode_creation:
-                    {
-                        // Maybe this function is a bad idea and we should inline it
-                        TotalBbox = BoxCreation(TotalBbox,&CurrentBbox,CurrentGesture,CurrentLabel,MousePosition,Bboxes,AnnPath);
-                    break;
-                    }
-                    case DispMode_manipulation:
-                    {
-                        BoxManipulation(TotalBbox, CurrentGesture, MousePosition, Bboxes);
-                    break;
-                    }
-                }
-            }
-            BeginScissorMode(ImageDisplayRec.x, ImageDisplayRec.y,ImageDisplayRec.width,ImageDisplayRec.height);
-                for (u32 BoxId = 0; BoxId < TotalBbox + 1; ++BoxId)
-                {
-                    DrawRectangleLinesEx(Bboxes[BoxId].Box,2,LabelsColors[Bboxes[BoxId].Label]);
-                }
-                {
-                    u32 x = (f32)Bboxes[CurrentBbox].Box.x;
-                    u32 y = (f32)Bboxes[CurrentBbox].Box.y;
-                    u32 w = (f32)Bboxes[CurrentBbox].Box.width;
-                    u32 h = (f32)Bboxes[CurrentBbox].Box.height;
-                    DrawRectangle(x - 2,y - 2,6,6,RAYWHITE);
-                    DrawRectangle(x + w - 3,y - 2,6,6,RAYWHITE);
-                    DrawRectangle(x + w - 3,y + h - 3,6,6,RAYWHITE);
-                    DrawRectangle(x - 1,y + h - 3,6,6,RAYWHITE);
-                }
-            EndScissorMode();
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
+//                 switch (DisplayMode)
+//                 {
+//                     case DispMode_creation:
+//                     {
+//                         // Maybe this function is a bad idea and we should inline it
+//                         TotalBbox = BoxCreation(TotalBbox,&CurrentBbox,CurrentGesture,CurrentLabel,MousePosition,Bboxes,AnnPath);
+//                     break;
+//                     }
+//                     case DispMode_manipulation:
+//                     {
+//                         BoxManipulation(TotalBbox, CurrentGesture, MousePosition, Bboxes);
+//                     break;
+//                     }
+//                 }
+//             }
+//             BeginScissorMode(ImageDisplayRec.x, ImageDisplayRec.y,ImageDisplayRec.width,ImageDisplayRec.height);
+//                 for (u32 BoxId = 0; BoxId < TotalBbox + 1; ++BoxId)
+//                 {
+//                     DrawRectangleLinesEx(Bboxes[BoxId].Box,2,LabelsColors[Bboxes[BoxId].Label]);
+//                 }
+//                 {
+//                     u32 x = (f32)Bboxes[CurrentBbox].Box.x;
+//                     u32 y = (f32)Bboxes[CurrentBbox].Box.y;
+//                     u32 w = (f32)Bboxes[CurrentBbox].Box.width;
+//                     u32 h = (f32)Bboxes[CurrentBbox].Box.height;
+//                     DrawRectangle(x - 2,y - 2,6,6,RAYWHITE);
+//                     DrawRectangle(x + w - 3,y - 2,6,6,RAYWHITE);
+//                     DrawRectangle(x + w - 3,y + h - 3,6,6,RAYWHITE);
+//                     DrawRectangle(x - 1,y + h - 3,6,6,RAYWHITE);
+//                 }
+//             EndScissorMode();
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
 
 
-#if TESTTHUMB
-            DrawThumnails(PreviewTextures,PathList);
-#endif
+// #if TESTTHUMB
+//             DrawThumnails(PreviewTextures,PathList);
+// #endif
 
-            DrawFPS(10,10);
-        EndDrawing();
+//             DrawFPS(10,10);
+//         EndDrawing();
     }
 
     CloseWindow();
