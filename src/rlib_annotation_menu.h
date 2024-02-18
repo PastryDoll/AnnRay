@@ -12,6 +12,12 @@ enum box_hit_state
     VerticalHit
 };
 
+struct render_display
+{
+    Camera2D camera;
+    Texture texture;
+};
+
 struct bbox
 {
     u32 Label;
@@ -28,6 +34,5 @@ struct zoom
 struct LoadedTexture
 {
     Texture CurrentTexture;
-    bool ShouldLoad;
-    char * Path;    
+    char *Path;    
 };

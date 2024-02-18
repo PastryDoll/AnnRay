@@ -12,6 +12,7 @@
 
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
+#include "raymath.h"
 
 #include "rlib_annray.h"
 
@@ -33,39 +34,6 @@
 #include "rlib_annotation_menu.cpp"
 
 #define TESTTHUMB 0
-
-internal const
-void SaveDataToFile(const char *FileName, bbox *Boxes, u32 NumBoxes)
-{
-    FILE *file = fopen(FileName, "wb");
-    if (file == NULL) {
-        perror("Error opening file");
-        return;
-    }
-    printf("%s\n",FileName);
-
-    fwrite(Boxes, sizeof(BoundingBox), NumBoxes, file);
-
-    fclose(file);
-}
-
-internal 
-void ReadInMemoryAnn(const char *FileName, u32 NumBoxes)
-{
-    FILE *file;
-    file = fopen(FileName, "rb");
-    if (file == NULL) {
-        perror("Error opening file");
-    }
-    bbox Boxes[NumBoxes];
-    fread(Boxes, sizeof(bbox), NumBoxes, file);
-
-    for (u32 BoxId = 0; BoxId < NumBoxes; ++BoxId)
-    {  
-        printf("id: %u,x: %f,y: %f,w: %f,h: %f,label: %u\n", BoxId,Boxes[BoxId].Box.x,Boxes[BoxId].Box.y,Boxes[BoxId].Box.width,Boxes[BoxId].Box.height, Boxes[BoxId].Label);
-    }
-    fclose(file);
-}
 
 // internal
 // void GenerateThumbnails(Image PreviewImages[], Texture PreviewTextures[], FilePathList PathList)
@@ -91,177 +59,6 @@ void ReadInMemoryAnn(const char *FileName, u32 NumBoxes)
 //         }
 // }
 
-internal const
-void DrawSegmentedLines(f32 X, f32 Y, f32 W, f32 H, Color color)
-{   
-    const u32 gap = 4;
-    const f32 SegLen = 12;
-
-    f32 LenX = W - PANELWIDTH;
-    u32 NSegX = (u32)ceil(LenX/SegLen + gap);
-
-    for (u32 Seg = 0; Seg < NSegX; ++Seg)
-    {
-        f32 start = PANELWIDTH + Seg*(SegLen + gap) - SegLen/2;
-        f32 end = start + SegLen;
-        DrawLineEx({start,Y},{end,Y},2,color);
-    }
-
-    f32 LenY = H - 0;
-    u32 NSegY = (u32)ceil(LenY/SegLen + gap);
-
-    for (u32 Seg = 0; Seg < NSegY; ++Seg)
-    {
-        f32 start = 0 + Seg*(SegLen + gap) - SegLen/2;
-        f32 end = start + SegLen;
-        DrawLineEx({X,start},{X,end},2,color);
-    }
-}
-
-internal inline
-void BoxManipulation(u32 Total, u32 CurrentGesture, Vector2 MousePosition, bbox Bboxes[])
-{
-    box_hit_state CollisionState = NoHit;
-    f32 e = 8;
-    s32 CollisionId = -1;
-
-    for (u32 BoxId = 0; BoxId < Total; ++BoxId)
-    {
-        if (CheckCollisionPointRec(MousePosition,Bboxes[BoxId].Box))
-        {
-            CollisionState = InsideHit;
-            CollisionId = BoxId;
-
-            // Right Logic || Left Logic
-            if  ((MousePosition.x > (Bboxes[BoxId].Box.x + Bboxes[BoxId].Box.width - e)) 
-                || (MousePosition.x < (Bboxes[BoxId].Box.x + e)))
-            {
-                CollisionState = HorizontalHit;
-            }
-            // Botton Logic || Top Logic
-            else if ((MousePosition.y > (Bboxes[BoxId].Box.y + Bboxes[BoxId].Box.height - e)) 
-                || (MousePosition.y < (Bboxes[BoxId].Box.y + e)))
-            {
-                CollisionState = VerticalHit;
-            }
-            
-            break;
-        }
-    }
-
-    switch (CollisionState)
-    {
-        case NoHit:
-        {
-            SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
-        break;
-        }
-        case InsideHit:
-        {   
-            internal Vector2 Tap = {};
-            if (CurrentGesture & (GESTURE_TAP))
-            {
-                SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
-                Tap.x = MousePosition.x;
-                Tap.y = MousePosition.y;
-            }
-            else if (CurrentGesture & (GESTURE_DRAG))
-            {
-                SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
-                Bboxes[CollisionId].Box.x += MousePosition.x - Tap.x;
-                Bboxes[CollisionId].Box.y += MousePosition.y - Tap.y;
-                Tap.x = MousePosition.x;
-                Tap.y = MousePosition.y;
-            }
-            else if (CurrentGesture & (GESTURE_HOLD))
-            {
-                SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
-
-            }
-            else
-            {
-                SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
-            }
-
-        break;
-        }
-        case HorizontalHit:
-        {
-            SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
-        break;
-        }
-        case VerticalHit:
-        {
-            SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
-        break;
-        }
-    }
-}
-
-internal inline
-u32 BoxCreation(u32 Total, u32 *CurrentBbox, u32 CurrentGesture, u32 CurrentLabel, Vector2 MousePosition, bbox Bboxes[], const char* AnnPath)
-{
-    SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
-    internal u32 PrevGesture = 3;
-    Rectangle *BBox = &Bboxes[Total].Box;
-    Bboxes[Total].Label = CurrentLabel;
-    internal Vector2 Tap = {};
-
-    if (CurrentGesture & (GESTURE_TAP))
-    {
-        Tap.x = MousePosition.x;
-        Tap.y = MousePosition.y;
-    }
-    else
-    {
-        if (CurrentGesture & (GESTURE_DRAG|GESTURE_HOLD))
-        {
-            // Down-Right
-            if ((MousePosition.x >= Tap.x) && (MousePosition.y >= Tap.y))
-            {   
-                BBox->x = Tap.x;
-                BBox->y = Tap.y;
-                BBox->width = MousePosition.x - Tap.x;
-                BBox->height = MousePosition.y - Tap.y;
-            }
-            // Upper Right
-            else if ((MousePosition.x > Tap.x) && (MousePosition.y < Tap.y))
-            {
-                BBox->width = MousePosition.x - Tap.x;
-                BBox->height = Tap.y - MousePosition.y;
-                BBox->x = Tap.x;
-                BBox->y = MousePosition.y;
-            }
-            // Down Left
-            else if ((MousePosition.x < Tap.x) && (MousePosition.y > Tap.y))
-            {
-                BBox->width = Tap.x - MousePosition.x;
-                BBox->height = MousePosition.y - Tap.y;
-                BBox->x = MousePosition.x;
-                BBox->y = Tap.y;
-            }
-            // Upper Left
-            else if ((MousePosition.x < Tap.x) && (MousePosition.y < Tap.y))
-            {
-                BBox->width = Tap.x - MousePosition.x;
-                BBox->height = Tap.y - MousePosition.y;
-                BBox->x = MousePosition.x;
-                BBox->y = MousePosition.y;
-            }
-        }
-    }
-    // If one goes too fast than the prevGesture can be also swipedown, not juts drag or hold.
-    if (BBox->width > 0.1 && ~(PrevGesture & (GESTURE_NONE)) && (CurrentGesture == (GESTURE_NONE)) && Total <= 10)
-    {
-        *CurrentBbox = Total;
-        Total += 1;
-        SaveDataToFile(AnnPath,Bboxes,Total);
-        ReadInMemoryAnn(AnnPath, Total);
-    }
-    PrevGesture = CurrentGesture;
-
-    return(Total);
-}
 
 int main()
 {
@@ -296,10 +93,11 @@ int main()
     zoom Zoom;
     Zoom.Strenght = 1.0f;
     Zoom.Position = {0.0f,0.0f};
-    bbox Bboxes[10] = {};
-    u32 CurrentLabel = 0;
-    u32 CurrentBbox = 0;
-    u32 TotalBbox = 0;
+    // bbox Bboxes[10] = {};
+    // u32 CurrentLabel = 0;
+    // u32 CurrentBbox = 0;
+    // u32 TotalBbox = 0;
+    render_display RenderDisplay = {};
 
     while(!WindowShouldClose())
     {   
@@ -311,7 +109,7 @@ int main()
 
         f32 dt = GetFrameTime();
 
-        AnnotationPage();
+        AnnotationPage(&RenderDisplay);
         // BeginDrawing();
 
             // ClearBackground(GRAY);
