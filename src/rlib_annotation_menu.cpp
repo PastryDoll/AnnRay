@@ -1,44 +1,12 @@
 #include "rlib_annotation_menu.h"
 
+bool first_frame = true;
 const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME};
 const global char *Labels[] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
 bbox Bboxes[10] = {};
-u32 CurrentLabel = 0;
-u32 CurrentBbox = 0;
-u32 TotalBbox = 0;
-
-internal const
-void SaveDataToFile(const char *FileName, bbox *Boxes, u32 NumBoxes)
-{
-    FILE *file = fopen(FileName, "wb");
-    if (file == NULL) {
-        perror("Error opening file");
-        return;
-    }
-    printf("%s\n",FileName);
-
-    fwrite(Boxes, sizeof(BoundingBox), NumBoxes, file);
-
-    fclose(file);
-}
-
-internal 
-void ReadInMemoryAnn(const char *FileName, u32 NumBoxes)
-{
-    FILE *file;
-    file = fopen(FileName, "rb");
-    if (file == NULL) {
-        perror("Error opening file");
-    }
-    bbox Boxes[NumBoxes];
-    fread(Boxes, sizeof(bbox), NumBoxes, file);
-
-    for (u32 BoxId = 0; BoxId < NumBoxes; ++BoxId)
-    {  
-        printf("id: %u,x: %f,y: %f,w: %f,h: %f,label: %u\n", BoxId,Boxes[BoxId].Box.x,Boxes[BoxId].Box.y,Boxes[BoxId].Box.width,Boxes[BoxId].Box.height, Boxes[BoxId].Label);
-    }
-    fclose(file);
-}
+annotation_page_state AnnotationState = {};
+annotation_display AnnotationDisplay = {};
+u8 CurrentCursorSprite = {};
 
 internal const
 void DrawSegmentedLines(f32 X, f32 Y, f32 W, f32 H, Color color)
@@ -68,13 +36,14 @@ void DrawSegmentedLines(f32 X, f32 Y, f32 W, f32 H, Color color)
 }
 
 internal inline
-void BoxManipulation(u32 Total, u32 CurrentGesture, Vector2 MousePosition, bbox Bboxes[])
+void BoxManipulation(Vector2 MousePosition)
 {
+    u32 CurrentGesture = GetGestureDetected();
     box_hit_state CollisionState = NoHit;
     f32 e = 8;
     s32 CollisionId = -1;
 
-    for (u32 BoxId = 0; BoxId < Total; ++BoxId)
+    for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox; ++BoxId)
     {
         if (CheckCollisionPointRec(MousePosition,Bboxes[BoxId].Box))
         {
@@ -102,7 +71,8 @@ void BoxManipulation(u32 Total, u32 CurrentGesture, Vector2 MousePosition, bbox 
     {
         case NoHit:
         {
-            SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
+            // SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
+            CurrentCursorSprite = MOUSE_CURSOR_CROSSHAIR;
         break;
         }
         case InsideHit:
@@ -110,13 +80,15 @@ void BoxManipulation(u32 Total, u32 CurrentGesture, Vector2 MousePosition, bbox 
             internal Vector2 Tap = {};
             if (CurrentGesture & (GESTURE_TAP))
             {
-                SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
+                // SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
+                CurrentCursorSprite = MOUSE_CURSOR_RESIZE_ALL;
                 Tap.x = MousePosition.x;
                 Tap.y = MousePosition.y;
             }
             else if (CurrentGesture & (GESTURE_DRAG))
             {
-                SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
+                // SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
+                CurrentCursorSprite = MOUSE_CURSOR_RESIZE_ALL;
                 Bboxes[CollisionId].Box.x += MousePosition.x - Tap.x;
                 Bboxes[CollisionId].Box.y += MousePosition.y - Tap.y;
                 Tap.x = MousePosition.x;
@@ -124,36 +96,47 @@ void BoxManipulation(u32 Total, u32 CurrentGesture, Vector2 MousePosition, bbox 
             }
             else if (CurrentGesture & (GESTURE_HOLD))
             {
-                SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
+                // SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
+                CurrentCursorSprite = MOUSE_CURSOR_RESIZE_ALL;
+
 
             }
             else
             {
-                SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+                // SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+                CurrentCursorSprite = MOUSE_CURSOR_POINTING_HAND;
+
+                
             }
 
         break;
         }
         case HorizontalHit:
         {
-            SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
+            // SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
+            CurrentCursorSprite = MOUSE_CURSOR_RESIZE_EW;
+
+
         break;
         }
         case VerticalHit:
         {
-            SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
+            // SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
+            CurrentCursorSprite = MOUSE_CURSOR_RESIZE_NS;
         break;
         }
     }
 }
 
 internal inline
-u32 BoxCreation(u32 Total, u32 *CurrentBbox, u32 CurrentLabel, Vector2 MousePosition, bbox Bboxes[])//, const char* AnnPath)
+void BoxCreation(Vector2 MousePosition)
 {
-    SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
+    // SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
+    CurrentCursorSprite = MOUSE_CURSOR_CROSSHAIR;
+
     internal u32 PrevGesture = 3;
-    Rectangle *BBox = &Bboxes[Total].Box;
-    Bboxes[Total].Label = CurrentLabel;
+    Rectangle *BBox = &Bboxes[AnnotationState.TotalBbox].Box;
+    Bboxes[AnnotationState.TotalBbox].Label = AnnotationState.CurrentLabel;
     internal Vector2 Tap = {};
     u32 CurrentGesture = GetGestureDetected();
 
@@ -201,64 +184,64 @@ u32 BoxCreation(u32 Total, u32 *CurrentBbox, u32 CurrentLabel, Vector2 MousePosi
         }
     }
     // If one goes too fast than the prevGesture can be also swipedown, not juts drag or hold.
-    if (BBox->width > 0.1 && ~(PrevGesture & (GESTURE_NONE)) && (CurrentGesture == (GESTURE_NONE)) && Total <= 10)
+    if (BBox->width > 0.1 && ~(PrevGesture & (GESTURE_NONE)) && (CurrentGesture == (GESTURE_NONE)) && AnnotationState.TotalBbox <= 10)
     {
-        *CurrentBbox = Total;
-        Total += 1;
-        // SaveDataToFile(AnnPath,Bboxes,Total);
-        // ReadInMemoryAnn(AnnPath, Total);
+        AnnotationState.CurrentBbox = AnnotationState.TotalBbox;
+        AnnotationState.TotalBbox += 1;
+        // SaveDataToFile(AnnPath,Bboxes,TotalBbox);
+        // ReadInMemoryAnn(AnnPath, TotalBbox);
     }
     PrevGesture = CurrentGesture;
-
-    return(Total);
 }
 
 internal
-void ImageDisplay(RenderTexture2D ImageDisplayTexture, render_display *RenderDisplay, disp_mode DisplayMode)
+void RenderImageDisplay()
 {
-    f32 RenderWidth = ImageDisplayTexture.texture.width;
-    f32 RenderHeight = ImageDisplayTexture.texture.height;
+    f32 RenderWidth = AnnotationDisplay.DisplayTexture.texture.width;
+    f32 RenderHeight = AnnotationDisplay.DisplayTexture.texture.height;
     Vector2 MousePosition = GetMousePosition();
     Vector2 MousePositionRelative = Vector2Clamp(MousePosition, {PANELWIDTH,0.0f}, {PANELWIDTH + RenderWidth, RenderHeight});
     MousePositionRelative.x -= PANELWIDTH;
 
-    // printf("Target: %f,%f\n", RenderDisplay->camera.target.x,RenderDisplay->camera.target.y);
-    // printf("offset: %f,%f\n", RenderDisplay->camera.offset.x,RenderDisplay->camera.offset.y);
+    u32 CurrentGesture = GetGestureDetected();
+    if ((CurrentGesture == GESTURE_DRAG) && (AnnotationState.DisplayMode == DispMode_moving))
+    {
+        Vector2 delta = GetMouseDelta();
+        delta = Vector2Scale(delta, -1.0f/AnnotationDisplay.camera.zoom);
 
-    u32 gest = GetGestureDetected();
-    // if (gest == GESTURE_DRAG)
-    // {
-    //     Vector2 delta = GetMouseDelta();
-    //     delta = Vector2Scale(delta, -1.0f/RenderDisplay->camera.zoom);
-
-    //     RenderDisplay->camera.target = Vector2Add(RenderDisplay->camera.target, delta);
-    // }
+        AnnotationDisplay.camera.target = Vector2Add(AnnotationDisplay.camera.target, delta);
+    }
 
     f32 wheel = GetMouseWheelMove();
-    Vector2 mouseWorldPos = GetScreenToWorld2D(MousePositionRelative, RenderDisplay->camera);
+    Vector2 mouseWorldPos = GetScreenToWorld2D(MousePositionRelative, AnnotationDisplay.camera);
     if (wheel != 0)
     {
 
-        RenderDisplay->camera.offset = MousePositionRelative;
-        RenderDisplay->camera.target = mouseWorldPos;
+        AnnotationDisplay.camera.offset = MousePositionRelative;
+        AnnotationDisplay.camera.target = mouseWorldPos;
 
-        const f32 zoomIncrement = 0.125f;
+        const f32 zoomIncrement = 0.005f;
+        const f32 zoomMin = 0.125f;
 
-        RenderDisplay->camera.zoom += (wheel*zoomIncrement);
-        if (RenderDisplay->camera.zoom < zoomIncrement) RenderDisplay->camera.zoom = zoomIncrement;
+        AnnotationDisplay.camera.zoom += (wheel*zoomIncrement);
+        if (AnnotationDisplay.camera.zoom < zoomMin) AnnotationDisplay.camera.zoom = zoomMin;
     }
 
-    switch (DisplayMode)
+    switch (AnnotationState.DisplayMode)
     {
         case DispMode_creation:
         {
             // Maybe this function is a bad idea and we should inline it
-            TotalBbox = BoxCreation(TotalBbox,&CurrentBbox,CurrentLabel,mouseWorldPos,Bboxes);//,AnnPath);
+            BoxCreation(mouseWorldPos);
         break;
         }
         case DispMode_manipulation:
         {
-            // BoxManipulation(TotalBbox, CurrentGesture, MousePosition, Bboxes);
+            BoxManipulation(mouseWorldPos);
+        break;
+        }
+        default:
+        {
         break;
         }
     }
@@ -268,14 +251,15 @@ void ImageDisplay(RenderTexture2D ImageDisplayTexture, render_display *RenderDis
     //world coordinate for left top of the screen, but if we want we can use offset to move the target
     //to another point on the screen.. Our zoom now works by setting target to the real world coordinate of the mouse,
     // and them offsetting it by the screen coordinate, so we have it centered on the mouse :). 
-    BeginTextureMode(ImageDisplayTexture);
-        BeginMode2D(RenderDisplay->camera);
+
+    BeginTextureMode(AnnotationDisplay.DisplayTexture);
+        BeginMode2D(AnnotationDisplay.camera);
             ClearBackground(BLACK);  // Clear render texture background color
-            DrawTexture(RenderDisplay->texture,0,0,WHITE);
-            printf("Total: %u\n", TotalBbox);
+            DrawTexture(AnnotationDisplay.ImageTexture,0,0,WHITE);
+            printf("Total: %u\n", AnnotationState.TotalBbox);
             printf("Bboxes[0].x, h: %f,%f\n", Bboxes[0].Box.x,Bboxes[0].Box.width);
-            // printf("Bboxes[1].x: %f\n", (Bboxes[1].Box.x));
-            for (u32 BoxId = 0; BoxId < TotalBbox + 1; ++BoxId)
+
+            for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox + 1; ++BoxId)
             {
                 DrawRectangleLinesEx(Bboxes[BoxId].Box,15,LabelsColors[Bboxes[BoxId].Label]);
             }
@@ -290,20 +274,20 @@ void ImageDisplay(RenderTexture2D ImageDisplayTexture, render_display *RenderDis
                 // DrawRectangle(x - 1,y + h - 3,6,6,RAYWHITE);
             }
         EndMode2D();
-        DrawSegmentedLines(MousePositionRelative.x,MousePositionRelative.y,RenderWidth,RenderHeight,LabelsColors[0]);
+        DrawSegmentedLines(MousePositionRelative.x,MousePositionRelative.y,RenderWidth,RenderHeight,LabelsColors[AnnotationState.CurrentLabel]);
     EndTextureMode();
 }
 
 internal
-u32 Panel(u32 CurrentLabel)
+u32 DrawPanel()
 {
     Vector2 MousePosition = GetMousePosition();
     u32 ScreenHeight = GetScreenHeight();
 
-    DrawRectangle(0,0,PANELWIDTH,ScreenHeight,BLACK);
+    DrawRectangle(0,0,PANELWIDTH,ScreenHeight,DARKBLUE);
     internal s32 Active = {};
     GuiToggleGroup((Rectangle){0,120,150,20},TextJoin(Labels,ArrayCount(Labels),"\n"),&Active);
-    CurrentLabel = Active;
+    AnnotationState.CurrentLabel = Active;
 
     for (u32 LabelId = 0; LabelId < ArrayCount(Labels);  ++LabelId)
     {   
@@ -312,265 +296,140 @@ u32 Panel(u32 CurrentLabel)
 
     if (IsKeyReleased(KEY_ONE))
     {
-        CurrentLabel = 0;
+        AnnotationState.CurrentLabel = 0;
         Active = 0;
     }
     else if (IsKeyReleased(KEY_TWO))
     {
-        CurrentLabel = 1;
+        AnnotationState.CurrentLabel = 1;
         Active = 1;
 
     }
     else if (IsKeyReleased(KEY_THREE))
     {
-        CurrentLabel = 2;
+        AnnotationState.CurrentLabel = 2;
         Active = 2;
 
     }
     else if (IsKeyReleased(KEY_FOUR))
     {
-        CurrentLabel = 3;
+        AnnotationState.CurrentLabel = 3;
         Active = 3;
 
     }
     else if (IsKeyReleased(KEY_FIVE))
     {
-        CurrentLabel = 4;
+        AnnotationState.CurrentLabel = 4;
         Active = 4;
 
     }
     else if (IsKeyReleased(KEY_SIX))
     {
-        CurrentLabel = 5;
+        AnnotationState.CurrentLabel = 5;
         Active = 5;
     }
 
     if (CheckCollisionPointRec(MousePosition,(Rectangle){0,0,PANELWIDTH,(float)ScreenHeight}))
     {
-        SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+        // SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+        CurrentCursorSprite = MOUSE_CURSOR_DEFAULT;
     }
 
-    return(CurrentLabel);
+    return(AnnotationState.CurrentLabel);
 }
 
 internal
-void CameraRoll(render_display *RenderDisplay)
+void InitializeAnnotationDisplay()
 {
-// Responsible to initialize new RenderDisplay
-
+// 
+// Responsible to initialize new AnnotationDisplay
+//
     u32 ScreenWidth = GetScreenWidth();
     u32 ScreenHeight = GetScreenHeight();
     
     f32 RenderWidth = ScreenWidth - PANELWIDTH;
     f32 RenderHeight = ScreenHeight;
 
-    f32 InitialZoom = RenderWidth/RenderDisplay->texture .width - 0.005;
-    Vector2 InitialOffSet = {(RenderWidth - RenderDisplay->texture .width*InitialZoom)*0.5f,(RenderHeight - RenderDisplay->texture.height*InitialZoom)*0.5f};
-    RenderDisplay->camera = {InitialOffSet,{0,0},0,InitialZoom};
+    f32 InitialZoom = RenderWidth/AnnotationDisplay.ImageTexture .width - 0.005;
+    Vector2 InitialOffSet = {(RenderWidth - AnnotationDisplay.ImageTexture .width*InitialZoom)*0.5f,(RenderHeight - AnnotationDisplay.ImageTexture.height*InitialZoom)*0.5f};
+    AnnotationDisplay.camera = {InitialOffSet,{0,0},0,InitialZoom};
 
 }
 
 internal
-void AnnotationPage(render_display *RenderDisplay)
+void AnnotationPage()
 {
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+//
 // Common Annotation Menu initializations
-
-    Vector2 MousePosition = GetMousePosition();
+// 
     u32 ScreenWidth = GetScreenWidth();
     u32 ScreenHeight = GetScreenHeight();
     
     f32 FullImageDisplayWidth = ScreenWidth > PANELWIDTH ? ScreenWidth - PANELWIDTH : 0;
     f32 FullImageDisplayHeight = ScreenHeight;
-    f32 dt = GetFrameTime();
-
-    internal u32 CurrentLabel = 0;
-    internal bool first_frame = true;
-
+// 
+// First frame initialization and manual reset
+// 
     if (IsKeyPressed(KEY_R) || first_frame)
     {
-        UnloadTexture(RenderDisplay->texture);
+        AnnotationDisplay.DisplayTexture = LoadRenderTexture(FullImageDisplayWidth,FullImageDisplayHeight);
+        SetTextureFilter(AnnotationDisplay.DisplayTexture.texture, TEXTURE_FILTER_BILINEAR);
+        UnloadTexture(AnnotationDisplay.ImageTexture);
         const char *ImagePath = TextFormat("%s/%s",TEST_FOLDER_JPG, TEST_PIC);
-        RenderDisplay->texture = LoadTexture(ImagePath);
-        CameraRoll(RenderDisplay);
+        AnnotationDisplay.ImageTexture = LoadTexture(ImagePath);
+        InitializeAnnotationDisplay();
+
+        s32 count = 0;
+        const char *ImageName = TextSplit(TEST_PIC,'.',&count)[0];
+        const char *AnnPathTmp = TextFormat("%s/%s.ann",PROJECT_FOLDER, ImageName);
+        char* AnnPath = (char*)malloc(strlen(AnnPathTmp) + 1);
+        strcpy(AnnPath,AnnPathTmp);
+
         first_frame = false;
     }
-    
-    // s32 count = 0;
-    // const char *ImageName = TextSplit(TEST_PIC,'.',&count)[0];
-    // const char *AnnPathTmp = TextFormat("%s/%s.ann",PROJECT_FOLDER, ImageName);
-    // char* AnnPath = (char*)malloc(strlen(AnnPathTmp) + 1);
-    // strcpy(AnnPath,AnnPathTmp);
+// 
+// Reset texture when resizing
+// 
+    if (IsWindowResized())
+    {
+        UnloadRenderTexture(AnnotationDisplay.DisplayTexture);
+        AnnotationDisplay.DisplayTexture = LoadRenderTexture(FullImageDisplayWidth,FullImageDisplayHeight);
+        SetTextureFilter(AnnotationDisplay.DisplayTexture.texture, TEXTURE_FILTER_BILINEAR);
+        InitializeAnnotationDisplay();
 
-    disp_mode DisplayMode = DispMode_creation;
+    }
+// 
+// Getting global DisplayMode
+// 
     if (IsKeyPressed(KEY_D))
     {
-        DisplayMode = DispMode_manipulation;
+        AnnotationState.DisplayMode = DispMode_manipulation;
     }
     else if (IsKeyPressed(KEY_B))
     {
-        DisplayMode = DispMode_creation;
+        AnnotationState.DisplayMode = DispMode_creation;
     }
-
-    internal RenderTexture2D ImageDisplayTexture = LoadRenderTexture(FullImageDisplayWidth,FullImageDisplayHeight);
-    SetTextureFilter(ImageDisplayTexture.texture, TEXTURE_FILTER_BILINEAR);  // Texture scale filter to use
-    if (IsWindowResized())
+    else if (IsKeyDown(KEY_LEFT_CONTROL))
     {
-        UnloadRenderTexture(ImageDisplayTexture);
-        ImageDisplayTexture = LoadRenderTexture(FullImageDisplayWidth,FullImageDisplayHeight);
-        SetTextureFilter(ImageDisplayTexture.texture, TEXTURE_FILTER_BILINEAR);  // Texture scale filter to use
-        CameraRoll(RenderDisplay);
-
+        AnnotationState.DisplayMode = DispMode_moving;
     }
-    ImageDisplay(ImageDisplayTexture, RenderDisplay, DisplayMode);
-    
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
-
-// Inside Lateral Menu Stuff & ImageDisplay Draw
+    else if (IsKeyReleased(KEY_LEFT_CONTROL))
+    {
+        AnnotationState.DisplayMode = DispMode_creation;
+    }
+// 
+// Render Image Display
+// 
+    RenderImageDisplay();
+// 
+// Draw RenderImageDisplay and Panel
+//  
     BeginDrawing();
         ClearBackground(PINK);
-
-        DrawTexturePro(ImageDisplayTexture.texture, (Rectangle){ 0.0f, 0.0f, (float)ImageDisplayTexture.texture.width, (float)-ImageDisplayTexture.texture.height},
+        DrawTexturePro(AnnotationDisplay.DisplayTexture.texture, (Rectangle){ 0.0f, 0.0f, (float)AnnotationDisplay.DisplayTexture.texture.width, (float)-AnnotationDisplay.DisplayTexture.texture.height},
                 (Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}, (Vector2){ 0, 0 }, 0.0f, WHITE);
-        DrawRectangle(0,0,PANELWIDTH,ScreenHeight,DARKBLUE);
-        internal s32 Active = {};
-        GuiToggleGroup((Rectangle){0,120,150,20},TextJoin(Labels,ArrayCount(Labels),"\n"),&Active);
-        CurrentLabel = Active;
-
-        for (u32 LabelId = 0; LabelId < ArrayCount(Labels);  ++LabelId)
-        {   
-            DrawRectangle(140,120 + 22*LabelId,10,20,LabelsColors[LabelId]);
-        }
-
-        if (IsKeyReleased(KEY_ONE))
-        {
-            CurrentLabel = 0;
-            Active = 0;
-        }
-        else if (IsKeyReleased(KEY_TWO))
-        {
-            CurrentLabel = 1;
-            Active = 1;
-
-        }
-        else if (IsKeyReleased(KEY_THREE))
-        {
-            CurrentLabel = 2;
-            Active = 2;
-
-        }
-        else if (IsKeyReleased(KEY_FOUR))
-        {
-            CurrentLabel = 3;
-            Active = 3;
-
-        }
-        else if (IsKeyReleased(KEY_FIVE))
-        {
-            CurrentLabel = 4;
-            Active = 4;
-
-        }
-        else if (IsKeyReleased(KEY_SIX))
-        {
-            CurrentLabel = 5;
-            Active = 5;
-        }
-
-        if (CheckCollisionPointRec(MousePosition,(Rectangle){0,0,PANELWIDTH,(float)ScreenHeight}))
-        {
-            SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-        }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // f32 FullImageDisplayWidth = ScreenWidth > PANELWIDTH ? ScreenWidth - PANELWIDTH : 0;
-        // f32 FullImageDisplayHeight = ScreenHeight;
-
-        // f32 ImageDisplayWidth = FullImageDisplayWidth - IMAGEDISPLAYSIDEGAP;
-        // f32 ImageDisplayHeight = ImageDisplayWidth*TextureRatio;
-
-        // Rectangle ImageDisplayRec;
-        // {
-        //     f32 w = (float)CurrentTexture.width;
-        //     f32 h = (float)CurrentTexture.height;
-
-        //     Rectangle TextureRec = {Zoom.Position.x*w,Zoom.Position.y*h,w/Zoom.Strenght,h/Zoom.Strenght};
-        //     ImageDisplayRec = {PANELWIDTH + IMAGEDISPLAYSIDEGAP/2,FullImageDisplayHeight/2 - ImageDisplayHeight/2,ImageDisplayWidth,ImageDisplayHeight};
-        //     DrawTexturePro(CurrentTexture,TextureRec,ImageDisplayRec,(Vector2){0,0},0,WHITE);\
-        // }
-
-        
-        // if (IsKeyDown(KEY_W))
-        // {
-        //     Zoom.Strenght += 0.9*dt;
-        // }
-        // if (IsKeyDown(KEY_S))
-        // {
-        //     Zoom.Strenght -= 0.9*dt;
-        // }
-        // if (IsKeyDown(KEY_LEFT))
-        // {
-        //     Zoom.Position.x -= 0.5*dt;
-        // }
-        // if (IsKeyDown(KEY_RIGHT))
-        // {
-        //     Zoom.Position.x += 0.5*dt;
-        // }
-        // if (IsKeyDown(KEY_UP))
-        // {
-        //     Zoom.Position.y -= 0.5*dt;
-        // }
-        // if (IsKeyDown(KEY_DOWN))
-        // {
-        //     Zoom.Position.y += 0.5*dt;
-        // }
-        // if (IsKeyPressed(KEY_D))
-        // {
-        //     DisplayMode = DispMode_manipulation;
-        // }
-        // else if (IsKeyPressed(KEY_B))
-        // {
-        //     DisplayMode = DispMode_creation;
-        // }
-
-        // if (CheckCollisionPointRec(MousePosition,(Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}))
-        // {
-        //     DrawSegmentedLines(MousePosition.x,MousePosition.y,ScreenWidth,ScreenHeight,LabelsColors[CurrentLabel]);
-
-        //     switch (DisplayMode)
-        //     {
-        //         case DispMode_creation:
-        //         {
-        //             // Maybe this function is a bad idea and we should inline it
-        //             TotalBbox = BoxCreation(TotalBbox,&CurrentBbox,CurrentGesture,CurrentLabel,MousePosition,Bboxes,AnnPath);
-        //         break;
-        //         }
-        //         case DispMode_manipulation:
-        //         {
-        //             BoxManipulation(TotalBbox, CurrentGesture, MousePosition, Bboxes);
-        //         break;
-        //         }
-        //     }
-        // }
-        // BeginScissorMode(ImageDisplayRec.x, ImageDisplayRec.y,ImageDisplayRec.width,ImageDisplayRec.height);
-        //     for (u32 BoxId = 0; BoxId < TotalBbox + 1; ++BoxId)
-        //     {
-        //         DrawRectangleLinesEx(Bboxes[BoxId].Box,2,LabelsColors[Bboxes[BoxId].Label]);
-        //     }
-        //     {
-        //         u32 x = (f32)Bboxes[CurrentBbox].Box.x;
-        //         u32 y = (f32)Bboxes[CurrentBbox].Box.y;
-        //         u32 w = (f32)Bboxes[CurrentBbox].Box.width;
-        //         u32 h = (f32)Bboxes[CurrentBbox].Box.height;
-        //         DrawRectangle(x - 2,y - 2,6,6,RAYWHITE);
-        //         DrawRectangle(x + w - 3,y - 2,6,6,RAYWHITE);
-        //         DrawRectangle(x + w - 3,y + h - 3,6,6,RAYWHITE);
-        //         DrawRectangle(x - 1,y + h - 3,6,6,RAYWHITE);
-        //     }
-        // EndScissorMode();
+        DrawPanel();
+        SetMouseCursor(CurrentCursorSprite);
         DrawFPS(10,10);
     EndDrawing();
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }

@@ -2,6 +2,7 @@ enum disp_mode
 {
     DispMode_creation,
     DispMode_manipulation,
+    DispMode_moving
 };
 
 enum box_hit_state
@@ -12,10 +13,19 @@ enum box_hit_state
     VerticalHit
 };
 
-struct render_display
+struct annotation_display
 {
     Camera2D camera;
-    Texture texture;
+    Texture ImageTexture;
+    RenderTexture2D DisplayTexture;
+};
+
+struct annotation_page_state
+{   
+    u32 CurrentLabel;
+    u32 CurrentBbox;
+    u32 TotalBbox; 
+    disp_mode DisplayMode;
 };
 
 struct bbox
