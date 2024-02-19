@@ -61,9 +61,11 @@ int main()
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "AnnRay");
-#if TESTTHUMB
-    const char *FolderPath = TEST_FOLDER_PNG;
+
+    const char *FolderPath = TEST_FOLDER_JPG;
     FilePathList PathList = LoadDirectoryFiles(FolderPath);
+
+#if TESTTHUMB
     Image PreviewImages[PathList.count];
     Texture PreviewTextures[PathList.count];
     GenerateThumbnails(PreviewImages, PreviewTextures, PathList);
@@ -71,7 +73,7 @@ int main()
 
     while(!WindowShouldClose())
     {   
-        AnnotationPage();
+        AnnotationPage(PathList);
 
 // #if TESTTHUMB
 //             DrawThumnails(PreviewTextures,PathList);

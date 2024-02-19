@@ -6,7 +6,9 @@ const global char *Labels[] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
 bbox Bboxes[10] = {};
 annotation_page_state AnnotationState = {};
 annotation_display AnnotationDisplay = {};
+u32 CurrentImageId = {};
 u8 CurrentCursorSprite = {};
+bool ReloadImage = false;
 
 internal const
 void DrawSegmentedLines(f32 X, f32 Y, f32 W, f32 H, Color color)
@@ -40,7 +42,7 @@ void BoxManipulation(Vector2 MousePosition)
 {
     u32 CurrentGesture = GetGestureDetected();
     box_hit_state CollisionState = NoHit;
-    f32 e = 8;
+    const f32 e = 10;
     s32 CollisionId = -1;
 
     for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox; ++BoxId)
@@ -71,7 +73,6 @@ void BoxManipulation(Vector2 MousePosition)
     {
         case NoHit:
         {
-            // SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
             CurrentCursorSprite = MOUSE_CURSOR_CROSSHAIR;
         break;
         }
@@ -80,14 +81,12 @@ void BoxManipulation(Vector2 MousePosition)
             internal Vector2 Tap = {};
             if (CurrentGesture & (GESTURE_TAP))
             {
-                // SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
                 CurrentCursorSprite = MOUSE_CURSOR_RESIZE_ALL;
                 Tap.x = MousePosition.x;
                 Tap.y = MousePosition.y;
             }
             else if (CurrentGesture & (GESTURE_DRAG))
             {
-                // SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
                 CurrentCursorSprite = MOUSE_CURSOR_RESIZE_ALL;
                 Bboxes[CollisionId].Box.x += MousePosition.x - Tap.x;
                 Bboxes[CollisionId].Box.y += MousePosition.y - Tap.y;
@@ -96,32 +95,25 @@ void BoxManipulation(Vector2 MousePosition)
             }
             else if (CurrentGesture & (GESTURE_HOLD))
             {
-                // SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
                 CurrentCursorSprite = MOUSE_CURSOR_RESIZE_ALL;
 
 
             }
             else
             {
-                // SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
                 CurrentCursorSprite = MOUSE_CURSOR_POINTING_HAND;
-
-                
             }
-
         break;
         }
+
         case HorizontalHit:
         {
-            // SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
             CurrentCursorSprite = MOUSE_CURSOR_RESIZE_EW;
-
-
         break;
         }
+
         case VerticalHit:
         {
-            // SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
             CurrentCursorSprite = MOUSE_CURSOR_RESIZE_NS;
         break;
         }
@@ -131,7 +123,6 @@ void BoxManipulation(Vector2 MousePosition)
 internal inline
 void BoxCreation(Vector2 MousePosition)
 {
-    // SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
     CurrentCursorSprite = MOUSE_CURSOR_CROSSHAIR;
 
     internal u32 PrevGesture = 3;
@@ -184,7 +175,8 @@ void BoxCreation(Vector2 MousePosition)
         }
     }
     // If one goes too fast than the prevGesture can be also swipedown, not juts drag or hold.
-    if (BBox->width > 0.1 && ~(PrevGesture & (GESTURE_NONE)) && (CurrentGesture == (GESTURE_NONE)) && AnnotationState.TotalBbox <= 10)
+    if (BBox->width > 0.1 && ~(PrevGesture & (GESTURE_NONE)) && 
+       (CurrentGesture == (GESTURE_NONE)) && AnnotationState.TotalBbox <= 10)
     {
         AnnotationState.CurrentBbox = AnnotationState.TotalBbox;
         AnnotationState.TotalBbox += 1;
@@ -208,7 +200,6 @@ void RenderImageDisplay()
     {
         Vector2 delta = GetMouseDelta();
         delta = Vector2Scale(delta, -1.0f/AnnotationDisplay.camera.zoom);
-
         AnnotationDisplay.camera.target = Vector2Add(AnnotationDisplay.camera.target, delta);
     }
 
@@ -231,7 +222,6 @@ void RenderImageDisplay()
     {
         case DispMode_creation:
         {
-            // Maybe this function is a bad idea and we should inline it
             BoxCreation(mouseWorldPos);
         break;
         }
@@ -256,8 +246,6 @@ void RenderImageDisplay()
         BeginMode2D(AnnotationDisplay.camera);
             ClearBackground(BLACK);  // Clear render texture background color
             DrawTexture(AnnotationDisplay.ImageTexture,0,0,WHITE);
-            printf("Total: %u\n", AnnotationState.TotalBbox);
-            printf("Bboxes[0].x, h: %f,%f\n", Bboxes[0].Box.x,Bboxes[0].Box.width);
 
             for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox + 1; ++BoxId)
             {
@@ -331,7 +319,6 @@ u32 DrawPanel()
 
     if (CheckCollisionPointRec(MousePosition,(Rectangle){0,0,PANELWIDTH,(float)ScreenHeight}))
     {
-        // SetMouseCursor(MOUSE_CURSOR_DEFAULT);
         CurrentCursorSprite = MOUSE_CURSOR_DEFAULT;
     }
 
@@ -357,35 +344,60 @@ void InitializeAnnotationDisplay()
 }
 
 internal
-void AnnotationPage()
+void AnnotationPage(FilePathList PathList)
 {
 //
 // Common Annotation Menu initializations
 // 
     u32 ScreenWidth = GetScreenWidth();
     u32 ScreenHeight = GetScreenHeight();
+    u32 CurrentGesture = GetGestureDetected();
     
     f32 FullImageDisplayWidth = ScreenWidth > PANELWIDTH ? ScreenWidth - PANELWIDTH : 0;
     f32 FullImageDisplayHeight = ScreenHeight;
+
+// 
+// Handle Input Events 
+// 
+    if (IsKeyPressed(KEY_R))
+    {
+        ReloadImage = true;
+    }
+    else if (IsKeyPressed(KEY_RIGHT))
+    {
+        ReloadImage = true;
+        CurrentImageId += CurrentImageId < PathList.count - 1 ? 1 : 0;
+    }
+    else if (IsKeyPressed(KEY_LEFT))
+    {
+        ReloadImage = true;
+        CurrentImageId -= CurrentImageId > 0 ? 1 : 0;
+
+    }
+    printf("Image id: %u\n", CurrentImageId);
+
+    char *ImagePath = PathList.paths[CurrentImageId];
+    
 // 
 // First frame initialization and manual reset
 // 
-    if (IsKeyPressed(KEY_R) || first_frame)
+    if (ReloadImage || first_frame)
     {
         AnnotationDisplay.DisplayTexture = LoadRenderTexture(FullImageDisplayWidth,FullImageDisplayHeight);
         SetTextureFilter(AnnotationDisplay.DisplayTexture.texture, TEXTURE_FILTER_BILINEAR);
         UnloadTexture(AnnotationDisplay.ImageTexture);
-        const char *ImagePath = TextFormat("%s/%s",TEST_FOLDER_JPG, TEST_PIC);
+        // const char *ImagePath = TextFormat("%s/%s",TEST_FOLDER_JPG, TEST_PIC);
         AnnotationDisplay.ImageTexture = LoadTexture(ImagePath);
         InitializeAnnotationDisplay();
 
-        s32 count = 0;
-        const char *ImageName = TextSplit(TEST_PIC,'.',&count)[0];
-        const char *AnnPathTmp = TextFormat("%s/%s.ann",PROJECT_FOLDER, ImageName);
-        char* AnnPath = (char*)malloc(strlen(AnnPathTmp) + 1);
-        strcpy(AnnPath,AnnPathTmp);
+        // s32 count = 0;
+        // const char *ImageName = TextSplit(TEST_PIC,'.',&count)[0];
+        // const char *AnnPathTmp = TextFormat("%s/%s.ann",PROJECT_FOLDER, ImageName);
+        // char* AnnPath = (char*)malloc(strlen(AnnPathTmp) + 1);
+        // strcpy(AnnPath,AnnPathTmp);
 
         first_frame = false;
+        ReloadImage = false;
     }
 // 
 // Reset texture when resizing
@@ -412,8 +424,11 @@ void AnnotationPage()
     else if (IsKeyDown(KEY_LEFT_CONTROL))
     {
         AnnotationState.DisplayMode = DispMode_moving;
+        CurrentCursorSprite = MOUSE_CURSOR_RESIZE_ALL;
     }
-    else if (IsKeyReleased(KEY_LEFT_CONTROL))
+    // There is probably a better way to do this.. bc now this is being called all the time
+    else if (!(IsKeyDown(KEY_LEFT_CONTROL)) && (CurrentGesture == GESTURE_NONE) &&
+            (AnnotationState.DisplayMode == DispMode_moving))
     {
         AnnotationState.DisplayMode = DispMode_creation;
     }
@@ -428,8 +443,8 @@ void AnnotationPage()
         ClearBackground(PINK);
         DrawTexturePro(AnnotationDisplay.DisplayTexture.texture, (Rectangle){ 0.0f, 0.0f, (float)AnnotationDisplay.DisplayTexture.texture.width, (float)-AnnotationDisplay.DisplayTexture.texture.height},
                 (Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}, (Vector2){ 0, 0 }, 0.0f, WHITE);
-        DrawPanel();
-        SetMouseCursor(CurrentCursorSprite);
+        DrawPanel(); // Panel After RenderImageDisplay otherwise it breaks CursorSprite
+        SetMouseCursor(CurrentCursorSprite); 
         DrawFPS(10,10);
     EndDrawing();
 }
