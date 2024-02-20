@@ -1,8 +1,13 @@
 #include "rlib_annotation_menu.h"
 
+#define MAX_STRINGS 16
+#define MAX_LENGTH 16
+
 bool first_frame = true;
+
+const char *Labels[MAX_STRINGS] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
+u32 LabelsTotal[MAX_STRINGS] = {};
 const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME};
-const global char *Labels[] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
 bbox Bboxes[10] = {};
 annotation_page_state AnnotationState = {};
 annotation_display AnnotationDisplay = {};
@@ -96,8 +101,6 @@ void BoxManipulation(Vector2 MousePosition)
             else if (CurrentGesture & (GESTURE_HOLD))
             {
                 CurrentCursorSprite = MOUSE_CURSOR_RESIZE_ALL;
-
-
             }
             else
             {
@@ -180,6 +183,7 @@ void BoxCreation(Vector2 MousePosition)
     {
         AnnotationState.CurrentBbox = AnnotationState.TotalBbox;
         AnnotationState.TotalBbox += 1;
+        LabelsTotal[AnnotationState.CurrentLabel] += 1;
         // SaveDataToFile(AnnPath,Bboxes,TotalBbox);
         // ReadInMemoryAnn(AnnPath, TotalBbox);
     }
@@ -271,15 +275,36 @@ u32 DrawPanel()
 {
     Vector2 MousePosition = GetMousePosition();
     u32 ScreenHeight = GetScreenHeight();
-
+ 
     DrawRectangle(0,0,PANELWIDTH,ScreenHeight,DARKBLUE);
+
+    const u32 LabelsW = ceil(PANELWIDTH*0.8);
+    const u32 LabelsH = 30;
+    const u32 LabelsColorW = 20;
+    const u32 LabelGroupLoc = 120;
+    const u32 LabelFontSize = 20;
+    u32 LabelNWHeight = 10;
+
+
     internal s32 Active = {};
-    GuiToggleGroup((Rectangle){0,120,150,20},TextJoin(Labels,ArrayCount(Labels),"\n"),&Active);
+    GuiToggleGroup((Rectangle){0,LabelGroupLoc,(f32)LabelsW,LabelsH},TextJoin(Labels,ArrayCount(Labels),"\n"),&Active);
     AnnotationState.CurrentLabel = Active;
 
     for (u32 LabelId = 0; LabelId < ArrayCount(Labels);  ++LabelId)
     {   
-        DrawRectangle(140,120 + 22*LabelId,10,20,LabelsColors[LabelId]);
+        u32 N = LabelsTotal[LabelId];
+        char N_str[20];
+        sprintf(N_str, "%u", N);
+        u32 LabelNWidth = MeasureText(N_str, LabelFontSize);
+
+        u32 LabelY = LabelGroupLoc + (LabelsH + GuiGetStyle(TOGGLE, GROUP_PADDING))*LabelId;
+        u32 TextLocX = (u32)ceil(LabelsW + LabelsColorW + LabelsH/2.0f - LabelNWidth/2.0f);
+        u32 TextLocY = (u32)ceil(LabelY + LabelNWHeight/2.0f);
+
+        DrawRectangle(LabelsW, LabelY, LabelsColorW, LabelsH, LabelsColors[LabelId]);
+
+        DrawRectangle(LabelsW + LabelsColorW, LabelY, LabelsH, LabelsH, LIGHTGRAY);
+        DrawText(N_str, TextLocX, TextLocY, LabelFontSize, BLACK);
     }
 
     if (IsKeyReleased(KEY_ONE))
