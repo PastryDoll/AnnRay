@@ -13,6 +13,15 @@ enum box_hit_state
     VerticalHit
 };
 
+struct segmented_lines
+{
+    f32 X; 
+    f32 Y; 
+    f32 W; 
+    f32 H;
+    Color color;
+};
+
 struct annotation_display
 {
     Camera2D camera;
@@ -20,12 +29,30 @@ struct annotation_display
     RenderTexture2D DisplayTexture;
 };
 
+// struct annotation_page_state_creation
+// {
+    
+// };
+
+// struct annotation_page_state_manipulation
+// {
+    
+// };
+
+
 struct annotation_page_state
 {   
-    u32 CurrentLabel;
+    u32 DisplayMode;
     u32 CurrentBbox;
     u32 TotalBbox; 
-    disp_mode DisplayMode;
+    s32 CurrentGesture;
+    s32 PrevGesture;
+    // union rlib_annotation_menu
+    // {
+    //     /* data */
+    // };
+    
+    u32 CurrentLabel;
 };
 
 struct bbox
