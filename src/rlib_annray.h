@@ -23,16 +23,35 @@ typedef double f64;
 #define F32Min -FLT_MAX
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 
-bool IsGestureDragging(s32 Gesture)
-{
-    if (Gesture & (GESTURE_DRAG)) return true;
-    return false;
-};
+internal inline
 bool IsGestureTapped(s32 Gesture)
 {
     if (Gesture & (GESTURE_TAP)) return true;
     return false;
 };
+
+internal inline
+bool IsGestureDragging(s32 Gesture)
+{
+    if (Gesture & (GESTURE_DRAG)) return true;
+    return false;
+};
+
+internal inline
+bool IsGestureHolding(s32 Gesture)
+{
+    if (Gesture & (GESTURE_HOLD)) return true;
+    return false;
+};
+
+internal inline
+bool IsGestureHoldingOrDragging(s32 Gesture)
+{
+    if (Gesture & (GESTURE_HOLD|GESTURE_DRAG)) return true;
+    return false;
+};
+
+internal inline
 bool IsGestureReleased(s32 CurrGesture, s32 PrevGesture)
 {
     if (~(PrevGesture & (GESTURE_NONE)) && 

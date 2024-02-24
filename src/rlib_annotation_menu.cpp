@@ -50,7 +50,7 @@ void DrawSegmentedLines(const segmented_lines SegmentedLines)
 internal inline
 void BoxManipulation(const Vector2 MousePosition)
 {
-    const f32 e = 10;
+    const f32 e = 50;
     
     if (!isGrabbed)
     {
@@ -58,7 +58,6 @@ void BoxManipulation(const Vector2 MousePosition)
         {
             if (CheckCollisionPointRec(MousePosition,Bboxes[BoxId].Box))
             {
-                CollisionState = InsideHit;
                 AnnotationState.CurrentBbox = BoxId;
 
                 // Right Logic || Left Logic
@@ -73,8 +72,16 @@ void BoxManipulation(const Vector2 MousePosition)
                 {
                     CollisionState = VerticalHit;
                 }
+                else
+                {
+                    CollisionState = InsideHit;
+                }
                 
                 break;
+            }
+            else
+            {
+                CollisionState = NoHit;
             }
         }
     }
@@ -83,7 +90,14 @@ void BoxManipulation(const Vector2 MousePosition)
     {
         case NoHit:
         {
-            CurrentCursorSprite = MOUSE_CURSOR_CROSSHAIR;
+            if (IsGestureHoldingOrDragging(AnnotationState.CurrentGesture))
+            {
+                CurrentCursorSprite = MOUSE_CURSOR_RESIZE_ALL;
+            }
+            else
+            {
+                CurrentCursorSprite = MOUSE_CURSOR_POINTING_HAND;
+            }
         break;
         }
         case InsideHit:
@@ -107,6 +121,7 @@ void BoxManipulation(const Vector2 MousePosition)
 
             else if (IsGestureReleased(AnnotationState.CurrentGesture, AnnotationState.PrevGesture))
             {
+                CurrentCursorSprite = MOUSE_CURSOR_POINTING_HAND;
                 isGrabbed = false;
             }
             else if (AnnotationState.CurrentGesture & (GESTURE_HOLD))
@@ -414,8 +429,6 @@ void AnnotationPage(FilePathList PathList)
         CurrentImageId -= CurrentImageId > 0 ? 1 : 0;
 
     }
-    printf("Image id: %u\n", CurrentImageId);
-
     char *ImagePath = PathList.paths[CurrentImageId];
     
 // 
