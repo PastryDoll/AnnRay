@@ -9,8 +9,10 @@ enum box_hit_state
 {
     NoHit,
     InsideHit,
-    HorizontalHit,
-    VerticalHit
+    HorizontalLeftHit,
+    HorizontalRightHit,
+    VerticalTopHit,
+    VerticalBottomHit,
 };
 
 struct segmented_lines

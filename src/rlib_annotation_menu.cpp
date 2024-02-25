@@ -77,22 +77,29 @@ void BoxManipulation(const Vector2 MousePosition)
     
     if (!isGrabbed)
     {
+        //@TODO we need to accoutn for when we have overlaying of boxes
         for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox; ++BoxId)
         {
             if (CheckCollisionPointRec(MousePosition,Bboxes[BoxId].Box))
             {
                 CurrentBbox = BoxId;
                 // Right Logic || Left Logic
-                if  ((MousePosition.x > (Bboxes[BoxId].Box.x + Bboxes[BoxId].Box.width - e)) 
-                    || (MousePosition.x < (Bboxes[BoxId].Box.x + e)))
+                if  (MousePosition.x > (Bboxes[BoxId].Box.x + Bboxes[BoxId].Box.width - e))
                 {
-                    CollisionState = HorizontalHit;
+                    CollisionState = HorizontalRightHit;
+                }
+                else if (MousePosition.x < (Bboxes[BoxId].Box.x + e))
+                {
+                    CollisionState = HorizontalLeftHit;
                 }
                 // Botton Logic || Top Logic
-                else if ((MousePosition.y > (Bboxes[BoxId].Box.y + Bboxes[BoxId].Box.height - e)) 
-                    || (MousePosition.y < (Bboxes[BoxId].Box.y + e)))
+                else if (MousePosition.y > (Bboxes[BoxId].Box.y + Bboxes[BoxId].Box.height - e)) 
                 {
-                    CollisionState = VerticalHit;
+                    CollisionState = VerticalBottomHit;
+                }
+                else if (MousePosition.y < (Bboxes[BoxId].Box.y + e))
+                {
+                    CollisionState = VerticalTopHit;
                 }
                 else
                 {
@@ -157,13 +164,39 @@ void BoxManipulation(const Vector2 MousePosition)
         break;
         }
 
-        case HorizontalHit:
+        case HorizontalRightHit:
+        {
+            CurrentCursorSprite = MOUSE_CURSOR_RESIZE_EW;
+            if (IsGestureTapped(AnnotationState.CurrentGesture))
+            {
+                AnnotationState.CurrentBbox = CurrentBbox;
+                isGrabbed = true;
+            }
+            if (IsGestureDragging(AnnotationState.CurrentGesture))
+            {
+                f32 DeltaX = GetMouseDelta().x;
+                DeltaX = 1.0f/AnnotationDisplay.camera.zoom*DeltaX;
+                Bboxes[AnnotationState.CurrentBbox].Box.width += DeltaX;
+            }
+            else if (IsGestureReleased(AnnotationState.CurrentGesture, AnnotationState.PrevGesture))
+            {
+                CurrentCursorSprite = MOUSE_CURSOR_POINTING_HAND;
+                isGrabbed = false;
+            }
+        break;
+        }
+        case HorizontalLeftHit:
         {
             CurrentCursorSprite = MOUSE_CURSOR_RESIZE_EW;
         break;
         }
+        case VerticalTopHit:
+        {
+            CurrentCursorSprite = MOUSE_CURSOR_RESIZE_NS;
 
-        case VerticalHit:
+        break;
+        }
+        case VerticalBottomHit:
         {
             CurrentCursorSprite = MOUSE_CURSOR_RESIZE_NS;
         break;
@@ -180,14 +213,14 @@ void BoxCreation(const Vector2 MousePosition)
     Bboxes[AnnotationState.TotalBbox].Label = AnnotationState.CurrentLabel;
     internal Vector2 Tap = {};
 
-    if (AnnotationState.CurrentGesture & (GESTURE_TAP))
+    if (IsGestureTapped(AnnotationState.CurrentGesture))
     {
         Tap.x = MousePosition.x;
         Tap.y = MousePosition.y;
     }
     else
     {
-        if (AnnotationState.CurrentGesture & (GESTURE_DRAG|GESTURE_HOLD))
+        if (IsGestureHoldingOrDragging(AnnotationState.CurrentGesture))
         {
             // Down-Right
             if ((MousePosition.x >= Tap.x) && (MousePosition.y >= Tap.y))
@@ -226,7 +259,7 @@ void BoxCreation(const Vector2 MousePosition)
     }
     // If one goes too fast than the prevGesture can be also swipedown, not juts drag or hold.
     if (BBox->width*BBox->height > 10 && IsGestureReleased(AnnotationState.CurrentGesture,AnnotationState.PrevGesture)
-                          && (AnnotationState.TotalBbox < ArrayCount(Bboxes) - 1))
+        && (AnnotationState.TotalBbox < ArrayCount(Bboxes)-1))
     {
         AnnotationState.TotalBbox += 1;
         LabelsTotal[AnnotationState.CurrentLabel] += 1;
@@ -571,7 +604,7 @@ void AnnotationPage(FilePathList PathList)
         DrawText(TextFormat("CurrentBox: %u",AnnotationState.CurrentBbox),10,30,10,WHITE);
         DrawText(TextFormat("TotalBoxes: %u",AnnotationState.TotalBbox),10,40,10,WHITE);
         DrawText(TextFormat("CurrentLabel: %u",AnnotationState.CurrentLabel),10,50,10,WHITE);
-        // DrawText(TextFormat("CurrentBox: %u",AnnotationState.CurrentBbox),10,30,10,WHITE);
+        DrawText(TextFormat("Zoom: %f",AnnotationDisplay.camera.zoom),10,60,10,WHITE);
         // DrawText(TextFormat("CurrentBox: %u",AnnotationState.CurrentBbox),10,30,10,WHITE);
         DrawFPS(10,10);
 
