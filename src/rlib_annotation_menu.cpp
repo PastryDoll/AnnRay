@@ -7,7 +7,7 @@
 const char *Labels[MAX_STRINGS] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
 u32 LabelsTotal[MAX_STRINGS] = {};
 const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME};
-bbox Bboxes[10] = {};
+bbox Bboxes[16] = {};
 
 annotation_page_state AnnotationState = {};
 
@@ -19,6 +19,15 @@ u8 CurrentCursorSprite = 0;
 
 u32 CollisionState = NoHit;
 bool isGrabbed = false;
+
+//@TODO Make this better
+internal
+void DeleteBox(bbox Bboxes[], u32 *TotalBoxes, u32 CurrentBox) {
+    for (int i = CurrentBox; i < *TotalBoxes - 1; ++i) {
+        Bboxes[i] = Bboxes[i + 1];
+    }
+    (*TotalBoxes)--;
+}
 
 internal
 void DrawSegmentedLines(const segmented_lines SegmentedLines)
@@ -51,6 +60,11 @@ internal inline
 void BoxManipulation(const Vector2 MousePosition)
 {
     const f32 e = 50;
+
+    if (IsKeyPressed(KEY_A))
+    {
+        DeleteBox(Bboxes,&AnnotationState.TotalBbox, AnnotationState.CurrentBbox);
+    }
     
     if (!isGrabbed)
     {
@@ -203,7 +217,7 @@ void BoxCreation(const Vector2 MousePosition)
     }
     // If one goes too fast than the prevGesture can be also swipedown, not juts drag or hold.
     if (BBox->width > 0.1 && ~(AnnotationState.PrevGesture & (GESTURE_NONE)) && 
-       (AnnotationState.CurrentGesture == (GESTURE_NONE)) && AnnotationState.TotalBbox <= 10)
+       (AnnotationState.CurrentGesture == (GESTURE_NONE)) && AnnotationState.TotalBbox < ArrayCount(Bboxes) - 1)
     {
         AnnotationState.CurrentBbox = AnnotationState.TotalBbox;
         AnnotationState.TotalBbox += 1;
@@ -277,15 +291,18 @@ void RenderImageDisplay()
             ClearBackground(BLACK);  // Clear render texture background color
             DrawTexture(AnnotationDisplay.ImageTexture,0,0,WHITE);
 
+            //@TODO Maybe we do a fragment shader for rectangle drawing
             for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox + 1; ++BoxId)
             {
                 DrawRectangleLinesEx(Bboxes[BoxId].Box,15,LabelsColors[Bboxes[BoxId].Label]);
             }
+
+            DrawRectangleRec(Bboxes[AnnotationState.CurrentBbox].Box,WHITE);
             {
-                // u32 x = (f32)Bboxes[CurrentBbox].Box.x;
-                // u32 y = (f32)Bboxes[CurrentBbox].Box.y;
-                // u32 w = (f32)Bboxes[CurrentBbox].Box.width;
-                // u32 h = (f32)Bboxes[CurrentBbox].Box.height;
+                // u32 x = (f32)Bboxes[AnnotationState.CurrentBbox].Box.x;
+                // u32 y = (f32)Bboxes[AnnotationState.CurrentBbox].Box.y;
+                // u32 w = (f32)Bboxes[AnnotationState.CurrentBbox].Box.width;
+                // u32 h = (f32)Bboxes[AnnotationState.CurrentBbox].Box.height;
                 // DrawRectangle(x - 2,y - 2,6,6,RAYWHITE);
                 // DrawRectangle(x + w - 3,y - 2,6,6,RAYWHITE);
                 // DrawRectangle(x + w - 3,y + h - 3,6,6,RAYWHITE);
@@ -315,6 +332,7 @@ u32 DrawPanel()
 // Draw Buttons
 //
 
+    //@TODO Improve this.. maybe we do this computation not in runtime
     bool toggle = false;
     char ButtonsText[2][40] = {};
     TextCopy(ButtonsText[0],GuiIconText(ICON_BOX, "Annotation Mode"));
@@ -333,7 +351,6 @@ u32 DrawPanel()
             GuiToggle(bounds[i], ButtonsText[i], &toggle);
             if (toggle) AnnotationState.DisplayMode = i;
         }
-        printf("%s,%u\n",ButtonsText[i],i);
     }
 
 
@@ -429,6 +446,7 @@ void AnnotationPage(FilePathList PathList)
     f32 FullImageDisplayWidth = ScreenWidth > PANELWIDTH ? ScreenWidth - PANELWIDTH : 0;
     f32 FullImageDisplayHeight = ScreenHeight;
 
+    printf("Current: %u\n", AnnotationState.CurrentBbox);
 // 
 // Handle Input Events 
 //  
