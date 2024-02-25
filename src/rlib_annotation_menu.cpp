@@ -20,15 +20,19 @@ u8 CurrentCursorSprite = 0;
 u32 CollisionState = NoHit;
 bool isGrabbed = false;
 
-//@TODO Make this better
+//@TODO Make this better.  This is actually broken.. we need to be carefull of what we delete.. take a look on this.
 internal
 void DeleteBox(bbox Bboxes[], annotation_page_state *AnnotationState) {
     u32 LabelToDelete = Bboxes[AnnotationState->CurrentBbox].Label;
-    for (int i = AnnotationState->CurrentBbox; i < AnnotationState->TotalBbox; ++i) {
-        Bboxes[i] = Bboxes[i + 1];
-    }
     if (AnnotationState->TotalBbox > 0) (AnnotationState->TotalBbox)--;
     if ((LabelsTotal[LabelToDelete] > 0)) (LabelsTotal[LabelToDelete])--;
+
+    for (int i = AnnotationState->CurrentBbox; i < AnnotationState->TotalBbox; ++i) {
+        Bboxes[i] = Bboxes[i + 1];
+        printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+    }
+    Bboxes[AnnotationState->TotalBbox] = {};
+    AnnotationState->CurrentBbox = AnnotationState->TotalBbox;
 }
 
 internal
@@ -67,7 +71,6 @@ void BoxManipulation(const Vector2 MousePosition)
     if (IsKeyPressed(KEY_A))
     {
         DeleteBox(Bboxes,&AnnotationState);
-        if (AnnotationState.CurrentBbox > 0) AnnotationState.CurrentBbox--;
     }
     
     if (!isGrabbed)
@@ -296,7 +299,7 @@ void RenderImageDisplay()
             DrawTexture(AnnotationDisplay.ImageTexture,0,0,WHITE);
 
             //@TODO Maybe we do a fragment shader for rectangle drawing
-            printf("Total: %u\n", AnnotationState.TotalBbox);
+            printf("CurrentBox: %u\n", AnnotationState.CurrentBbox);
 
             for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox; ++BoxId)
             {
@@ -367,11 +370,11 @@ u32 DrawPanel()
     // Add + to the end 
     Rectangle NewLabelRec = LabelGroupRec;
     NewLabelRec.y += (GuiGetStyle(TOGGLE, GROUP_PADDING) +LabelsH)*TotalLabels;
-    GuiButton(NewLabelRec,"+");
+    if (GuiButton(NewLabelRec,"+"))
+    {
+        TotalLabels += 1;
+    }
 
-    // internal char text[10];
-    // internal bool *secret;
-    // GuiTextInputBox((Rectangle){10,500,100,200},"","","",text,10,secret);
 //
 //  Get Current Label from Panel interaction 
 //
@@ -557,6 +560,12 @@ void AnnotationPage(FilePathList PathList)
                 (Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}, (Vector2){ 0, 0 }, 0.0f, WHITE);
         DrawPanel(); // Panel After RenderImageDisplay otherwise it breaks CursorSprite
         SetMouseCursor(CurrentCursorSprite); 
+// 
+// Draw Debug info:
+// 
+        
+        DrawText(TextFormat("CurrentBox: %u",AnnotationState.CurrentBbox),10,30,10,WHITE);
         DrawFPS(10,10);
+
     EndDrawing();
 }
