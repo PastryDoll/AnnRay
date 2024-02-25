@@ -23,10 +23,10 @@ bool isGrabbed = false;
 //@TODO Make this better
 internal
 void DeleteBox(bbox Bboxes[], u32 *TotalBoxes, u32 CurrentBox) {
-    for (int i = CurrentBox; i < *TotalBoxes - 1; ++i) {
+    for (int i = CurrentBox; i < *TotalBoxes; ++i) {
         Bboxes[i] = Bboxes[i + 1];
     }
-    (*TotalBoxes)--;
+    if (*TotalBoxes > 0) (*TotalBoxes)--;;
 }
 
 internal
@@ -63,7 +63,9 @@ void BoxManipulation(const Vector2 MousePosition)
 
     if (IsKeyPressed(KEY_A))
     {
+        printf("Delete\n");
         DeleteBox(Bboxes,&AnnotationState.TotalBbox, AnnotationState.CurrentBbox);
+        if (AnnotationState.CurrentBbox > 0) AnnotationState.CurrentBbox--;
     }
     
     if (!isGrabbed)
@@ -168,14 +170,15 @@ void BoxCreation(const Vector2 MousePosition)
 {
     CurrentCursorSprite = MOUSE_CURSOR_CROSSHAIR;
 
-    Rectangle *BBox = &Bboxes[AnnotationState.TotalBbox].Box;
-    Bboxes[AnnotationState.TotalBbox].Label = AnnotationState.CurrentLabel;
+    Rectangle *BBox = &Bboxes[AnnotationState.CurrentBbox].Box;
+    Bboxes[AnnotationState.CurrentBbox].Label = AnnotationState.CurrentLabel;
     internal Vector2 Tap = {};
 
     if (AnnotationState.CurrentGesture & (GESTURE_TAP))
     {
         Tap.x = MousePosition.x;
         Tap.y = MousePosition.y;
+        AnnotationState.TotalBbox += 1;
     }
     else
     {
@@ -213,6 +216,7 @@ void BoxCreation(const Vector2 MousePosition)
                 BBox->x = MousePosition.x;
                 BBox->y = MousePosition.y;
             }
+
         }
     }
     // If one goes too fast than the prevGesture can be also swipedown, not juts drag or hold.
@@ -220,8 +224,8 @@ void BoxCreation(const Vector2 MousePosition)
        (AnnotationState.CurrentGesture == (GESTURE_NONE)) && AnnotationState.TotalBbox < ArrayCount(Bboxes) - 1)
     {
         AnnotationState.CurrentBbox = AnnotationState.TotalBbox;
-        AnnotationState.TotalBbox += 1;
         LabelsTotal[AnnotationState.CurrentLabel] += 1;
+
         // SaveDataToFile(AnnPath,Bboxes,TotalBbox);
         // ReadInMemoryAnn(AnnPath, TotalBbox);
     }
@@ -292,7 +296,9 @@ void RenderImageDisplay()
             DrawTexture(AnnotationDisplay.ImageTexture,0,0,WHITE);
 
             //@TODO Maybe we do a fragment shader for rectangle drawing
-            for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox + 1; ++BoxId)
+            printf("Total: %u\n", AnnotationState.TotalBbox);
+
+            for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox; ++BoxId)
             {
                 DrawRectangleLinesEx(Bboxes[BoxId].Box,15,LabelsColors[Bboxes[BoxId].Label]);
             }
@@ -446,7 +452,7 @@ void AnnotationPage(FilePathList PathList)
     f32 FullImageDisplayWidth = ScreenWidth > PANELWIDTH ? ScreenWidth - PANELWIDTH : 0;
     f32 FullImageDisplayHeight = ScreenHeight;
 
-    printf("Current: %u\n", AnnotationState.CurrentBbox);
+    // printf("Current: %u\n", AnnotationState.CurrentBbox);
 // 
 // Handle Input Events 
 //  
