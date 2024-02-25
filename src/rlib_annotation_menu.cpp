@@ -3,8 +3,8 @@
 #define MAX_STRINGS 16
 #define MAX_LENGTH 16
 
-
-const char *Labels[MAX_STRINGS] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
+char Labels[MAX_LENGTH][MAX_STRINGS] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
+u32 TotalLabels = 5;
 u32 LabelsTotal[MAX_STRINGS] = {};
 const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME};
 bbox Bboxes[16] = {};
@@ -22,11 +22,13 @@ bool isGrabbed = false;
 
 //@TODO Make this better
 internal
-void DeleteBox(bbox Bboxes[], u32 *TotalBoxes, u32 CurrentBox) {
-    for (int i = CurrentBox; i < *TotalBoxes; ++i) {
+void DeleteBox(bbox Bboxes[], annotation_page_state *AnnotationState) {
+    u32 LabelToDelete = Bboxes[AnnotationState->CurrentBbox].Label;
+    for (int i = AnnotationState->CurrentBbox; i < AnnotationState->TotalBbox; ++i) {
         Bboxes[i] = Bboxes[i + 1];
     }
-    if (*TotalBoxes > 0) (*TotalBoxes)--;;
+    if (AnnotationState->TotalBbox > 0) (AnnotationState->TotalBbox)--;
+    if ((LabelsTotal[LabelToDelete] > 0)) (LabelsTotal[LabelToDelete])--;
 }
 
 internal
@@ -64,8 +66,7 @@ void BoxManipulation(const Vector2 MousePosition)
 
     if (IsKeyPressed(KEY_A))
     {
-        printf("Delete\n");
-        DeleteBox(Bboxes,&AnnotationState.TotalBbox, AnnotationState.CurrentBbox);
+        DeleteBox(Bboxes,&AnnotationState);
         if (AnnotationState.CurrentBbox > 0) AnnotationState.CurrentBbox--;
     }
     
@@ -101,7 +102,6 @@ void BoxManipulation(const Vector2 MousePosition)
             }
         }
     }
-
     switch (CollisionState)
     {
         case NoHit:
@@ -179,7 +179,6 @@ void BoxCreation(const Vector2 MousePosition)
     {
         Tap.x = MousePosition.x;
         Tap.y = MousePosition.y;
-        AnnotationState.TotalBbox += 1;
     }
     else
     {
@@ -224,13 +223,13 @@ void BoxCreation(const Vector2 MousePosition)
     if (BBox->width > 0.1 && ~(AnnotationState.PrevGesture & (GESTURE_NONE)) && 
        (AnnotationState.CurrentGesture == (GESTURE_NONE)) && AnnotationState.TotalBbox < ArrayCount(Bboxes) - 1)
     {
-        AnnotationState.CurrentBbox = AnnotationState.TotalBbox;
+        AnnotationState.TotalBbox += 1;
         LabelsTotal[AnnotationState.CurrentLabel] += 1;
+        AnnotationState.CurrentBbox = AnnotationState.TotalBbox;
 
         // SaveDataToFile(AnnPath,Bboxes,TotalBbox);
         // ReadInMemoryAnn(AnnPath, TotalBbox);
     }
-    AnnotationState.PrevGesture = AnnotationState.CurrentGesture;
 }
 
 internal
@@ -336,35 +335,9 @@ u32 DrawPanel()
     u32 LabelNWHeight = 10;
 
 // 
-// Draw Buttons
-//
-
-    //@TODO Improve this.. maybe we do this computation not in runtime
-    bool toggle = false;
-    char ButtonsText[2][40] = {};
-    TextCopy(ButtonsText[0],GuiIconText(ICON_BOX, "Annotation Mode"));
-    TextCopy(ButtonsText[1],GuiIconText(ICON_CURSOR_SCALE, "Edit Mode"));
-    Rectangle bounds[2] = {(Rectangle){ 0, 90, 140, 20 }, (Rectangle){ 140, 90, 140, 20 }};
-    for (u32 i = 0; i < ArrayCount(ButtonsText); i++)
-    {
-        if (i == (AnnotationState.DisplayMode))
-        {
-            toggle = true;
-            GuiToggle(bounds[i], ButtonsText[i], &toggle);
-        }
-        else
-        {
-            toggle = false;
-            GuiToggle(bounds[i], ButtonsText[i], &toggle);
-            if (toggle) AnnotationState.DisplayMode = i;
-        }
-    }
-
-
-// 
 // Draw Labels on Panel
 // 
-    for (u32 LabelId = 0; LabelId < ArrayCount(Labels);  ++LabelId)
+    for (u32 LabelId = 0; LabelId < TotalLabels;  ++LabelId)
     {   
         u32 N = LabelsTotal[LabelId];
         char N_str[20];
@@ -380,10 +353,28 @@ u32 DrawPanel()
         DrawRectangle(LabelsW + LabelsColorW, LabelY, LabelsH, LabelsH, LIGHTGRAY);
         DrawText(N_str, TextLocX, TextLocY, LabelFontSize, BLACK);
     }
+
+    const char *LabelsJoinedText[TotalLabels];
+    for (u32 LabelId = 0; LabelId < TotalLabels; ++LabelId)
+    {
+        const char *LabelPtr = Labels[LabelId];
+        LabelsJoinedText[LabelId] = LabelPtr;
+    }
+    Rectangle LabelGroupRec = (Rectangle){0,LabelGroupLoc,(float)LabelsW,LabelsH};
+
+    GuiToggleGroup(LabelGroupRec,TextJoin(LabelsJoinedText,TotalLabels,"\n"),&AnnotationState.CurrentLabel);
+
+    // Add + to the end 
+    Rectangle NewLabelRec = LabelGroupRec;
+    NewLabelRec.y += (GuiGetStyle(TOGGLE, GROUP_PADDING) +LabelsH)*TotalLabels;
+    GuiButton(NewLabelRec,"+");
+
+    // internal char text[10];
+    // internal bool *secret;
+    // GuiTextInputBox((Rectangle){10,500,100,200},"","","",text,10,secret);
 //
 //  Get Current Label from Panel interaction 
 //
-    GuiToggleGroup((Rectangle){0,LabelGroupLoc,(f32)LabelsW,LabelsH},TextJoin(Labels,ArrayCount(Labels),"\n"),&AnnotationState.CurrentLabel);
 
     if (IsKeyReleased(KEY_ONE))
     {
@@ -417,6 +408,31 @@ u32 DrawPanel()
     if (CheckCollisionPointRec(MousePosition,(Rectangle){0,0,PANELWIDTH,(float)ScreenHeight}))
     {
         CurrentCursorSprite = MOUSE_CURSOR_DEFAULT;
+    }
+
+// 
+// Draw Buttons
+//
+
+    //@TODO Improve this.. maybe we do this computation not in runtime
+    char ButtonsText[2][40] = {};
+    TextCopy(ButtonsText[0],GuiIconText(ICON_BOX, "Annotation Mode"));
+    TextCopy(ButtonsText[1],GuiIconText(ICON_CURSOR_SCALE, "Edit Mode"));
+    Rectangle bounds[2] = {(Rectangle){ 0, 90, 140, 20 }, (Rectangle){ 140, 90, 140, 20 }};
+    bool toggle = false;
+    for (u32 i = 0; i < ArrayCount(ButtonsText); i++)
+    {
+        if (i == (AnnotationState.DisplayMode))
+        {
+            toggle = true;
+            GuiToggle(bounds[i], ButtonsText[i], &toggle);
+        }
+        else
+        {
+            toggle = false;
+            GuiToggle(bounds[i], ButtonsText[i], &toggle);
+            if (toggle) AnnotationState.DisplayMode = i;
+        }
     }
 
     return(AnnotationState.CurrentLabel);

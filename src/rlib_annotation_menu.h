@@ -59,7 +59,6 @@ struct bbox
 {
     u32 Label;
     Rectangle Box;
-    bool Selected;
 };
 
 struct zoom
