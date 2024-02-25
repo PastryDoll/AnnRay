@@ -78,6 +78,7 @@ void BoxManipulation(const Vector2 MousePosition)
     if (!isGrabbed)
     {
         //@TODO we need to accoutn for when we have overlaying of boxes
+        //@TODO Check for corners also
         for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox; ++BoxId)
         {
             if (CheckCollisionPointRec(MousePosition,Bboxes[BoxId].Box))
@@ -118,6 +119,10 @@ void BoxManipulation(const Vector2 MousePosition)
     {
         case NoHit:
         {
+            if (IsGestureTapped(AnnotationState.CurrentGesture))
+            {
+                AnnotationState.CurrentBbox = AnnotationState.TotalBbox;
+            }
             if (IsGestureHoldingOrDragging(AnnotationState.CurrentGesture))
             {
                 CurrentCursorSprite = MOUSE_CURSOR_RESIZE_ALL;
@@ -163,7 +168,6 @@ void BoxManipulation(const Vector2 MousePosition)
             }
         break;
         }
-
         case HorizontalRightHit:
         {
             CurrentCursorSprite = MOUSE_CURSOR_RESIZE_EW;
@@ -188,17 +192,67 @@ void BoxManipulation(const Vector2 MousePosition)
         case HorizontalLeftHit:
         {
             CurrentCursorSprite = MOUSE_CURSOR_RESIZE_EW;
+            if (IsGestureTapped(AnnotationState.CurrentGesture))
+            {
+                AnnotationState.CurrentBbox = CurrentBbox;
+                isGrabbed = true;
+            }
+            if (IsGestureDragging(AnnotationState.CurrentGesture))
+            {
+                f32 DeltaX = GetMouseDelta().x;
+                DeltaX = 1.0f/AnnotationDisplay.camera.zoom*DeltaX;
+                Bboxes[AnnotationState.CurrentBbox].Box.width -= DeltaX;
+                Bboxes[AnnotationState.CurrentBbox].Box.x += DeltaX;
+            }
+            else if (IsGestureReleased(AnnotationState.CurrentGesture, AnnotationState.PrevGesture))
+            {
+                CurrentCursorSprite = MOUSE_CURSOR_POINTING_HAND;
+                isGrabbed = false;
+            }
         break;
         }
         case VerticalTopHit:
         {
             CurrentCursorSprite = MOUSE_CURSOR_RESIZE_NS;
+            if (IsGestureTapped(AnnotationState.CurrentGesture))
+            {
+                AnnotationState.CurrentBbox = CurrentBbox;
+                isGrabbed = true;
+            }
+            if (IsGestureDragging(AnnotationState.CurrentGesture))
+            {
+                f32 DeltaY = GetMouseDelta().y;
+                DeltaY = 1.0f/AnnotationDisplay.camera.zoom*DeltaY;
+                Bboxes[AnnotationState.CurrentBbox].Box.height -= DeltaY;
+                Bboxes[AnnotationState.CurrentBbox].Box.y += DeltaY;
+            }
+            else if (IsGestureReleased(AnnotationState.CurrentGesture, AnnotationState.PrevGesture))
+            {
+                CurrentCursorSprite = MOUSE_CURSOR_POINTING_HAND;
+                isGrabbed = false;
+            }
 
         break;
         }
         case VerticalBottomHit:
         {
             CurrentCursorSprite = MOUSE_CURSOR_RESIZE_NS;
+            if (IsGestureTapped(AnnotationState.CurrentGesture))
+            {
+                AnnotationState.CurrentBbox = CurrentBbox;
+                isGrabbed = true;
+            }
+            if (IsGestureDragging(AnnotationState.CurrentGesture))
+            {
+                f32 DeltaY = GetMouseDelta().y;
+                DeltaY = 1.0f/AnnotationDisplay.camera.zoom*DeltaY;
+                Bboxes[AnnotationState.CurrentBbox].Box.height += DeltaY;
+            }
+            else if (IsGestureReleased(AnnotationState.CurrentGesture, AnnotationState.PrevGesture))
+            {
+                CurrentCursorSprite = MOUSE_CURSOR_POINTING_HAND;
+                isGrabbed = false;
+            }
         break;
         }
     }
