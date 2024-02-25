@@ -54,7 +54,7 @@ bool IsGestureHoldingOrDragging(s32 Gesture)
 internal inline
 bool IsGestureReleased(s32 CurrGesture, s32 PrevGesture)
 {
-    if (~(PrevGesture & (GESTURE_NONE)) && 
+    if (!(PrevGesture == (GESTURE_NONE)) && 
         (CurrGesture == (GESTURE_NONE))) return true;
     return false;
 };

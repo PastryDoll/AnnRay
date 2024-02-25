@@ -174,8 +174,8 @@ void BoxCreation(const Vector2 MousePosition)
 {
     CurrentCursorSprite = MOUSE_CURSOR_CROSSHAIR;
 
-    Rectangle *BBox = &Bboxes[AnnotationState.CurrentBbox].Box;
-    Bboxes[AnnotationState.CurrentBbox].Label = AnnotationState.CurrentLabel;
+    Rectangle *BBox = &Bboxes[AnnotationState.TotalBbox].Box;
+    Bboxes[AnnotationState.TotalBbox].Label = AnnotationState.CurrentLabel;
     internal Vector2 Tap = {};
 
     if (AnnotationState.CurrentGesture & (GESTURE_TAP))
@@ -223,12 +223,15 @@ void BoxCreation(const Vector2 MousePosition)
         }
     }
     // If one goes too fast than the prevGesture can be also swipedown, not juts drag or hold.
-    if (BBox->width > 0.1 && ~(AnnotationState.PrevGesture & (GESTURE_NONE)) && 
-       (AnnotationState.CurrentGesture == (GESTURE_NONE)) && AnnotationState.TotalBbox < ArrayCount(Bboxes) - 1)
+    if (BBox->width*BBox->height > 10 && IsGestureReleased(AnnotationState.CurrentGesture,AnnotationState.PrevGesture)
+                          && (AnnotationState.TotalBbox < ArrayCount(Bboxes) - 1))
     {
         AnnotationState.TotalBbox += 1;
         LabelsTotal[AnnotationState.CurrentLabel] += 1;
         AnnotationState.CurrentBbox = AnnotationState.TotalBbox;
+        printf("!!!!!!!!!!!\n");
+        printf("PrevGesture: %u,%u\n", AnnotationState.PrevGesture,!(AnnotationState.PrevGesture & (GESTURE_NONE)));
+        printf("CurrentGesture: %u\n", AnnotationState.CurrentGesture);
 
         // SaveDataToFile(AnnPath,Bboxes,TotalBbox);
         // ReadInMemoryAnn(AnnPath, TotalBbox);
@@ -299,7 +302,6 @@ void RenderImageDisplay()
             DrawTexture(AnnotationDisplay.ImageTexture,0,0,WHITE);
 
             //@TODO Maybe we do a fragment shader for rectangle drawing
-            printf("CurrentBox: %u\n", AnnotationState.CurrentBbox);
 
             for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox; ++BoxId)
             {
@@ -565,6 +567,10 @@ void AnnotationPage(FilePathList PathList)
 // 
         
         DrawText(TextFormat("CurrentBox: %u",AnnotationState.CurrentBbox),10,30,10,WHITE);
+        DrawText(TextFormat("TotalBoxes: %u",AnnotationState.TotalBbox),10,40,10,WHITE);
+        DrawText(TextFormat("CurrentLabel: %u",AnnotationState.CurrentLabel),10,50,10,WHITE);
+        // DrawText(TextFormat("CurrentBox: %u",AnnotationState.CurrentBbox),10,30,10,WHITE);
+        // DrawText(TextFormat("CurrentBox: %u",AnnotationState.CurrentBbox),10,30,10,WHITE);
         DrawFPS(10,10);
 
     EndDrawing();
