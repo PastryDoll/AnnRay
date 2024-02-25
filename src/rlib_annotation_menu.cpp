@@ -312,6 +312,32 @@ u32 DrawPanel()
     u32 LabelNWHeight = 10;
 
 // 
+// Draw Buttons
+//
+
+    bool toggle = false;
+    char ButtonsText[2][40] = {};
+    TextCopy(ButtonsText[0],GuiIconText(ICON_BOX, "Annotation Mode"));
+    TextCopy(ButtonsText[1],GuiIconText(ICON_CURSOR_SCALE, "Edit Mode"));
+    Rectangle bounds[2] = {(Rectangle){ 0, 90, 140, 20 }, (Rectangle){ 140, 90, 140, 20 }};
+    for (u32 i = 0; i < ArrayCount(ButtonsText); i++)
+    {
+        if (i == (AnnotationState.DisplayMode))
+        {
+            toggle = true;
+            GuiToggle(bounds[i], ButtonsText[i], &toggle);
+        }
+        else
+        {
+            toggle = false;
+            GuiToggle(bounds[i], ButtonsText[i], &toggle);
+            if (toggle) AnnotationState.DisplayMode = i;
+        }
+        printf("%s,%u\n",ButtonsText[i],i);
+    }
+
+
+// 
 // Draw Labels on Panel
 // 
     for (u32 LabelId = 0; LabelId < ArrayCount(Labels);  ++LabelId)
@@ -333,43 +359,35 @@ u32 DrawPanel()
 //
 //  Get Current Label from Panel interaction 
 //
-    internal s32 Active = {};
-    GuiToggleGroup((Rectangle){0,LabelGroupLoc,(f32)LabelsW,LabelsH},TextJoin(Labels,ArrayCount(Labels),"\n"),&Active);
-    AnnotationState.CurrentLabel = Active;
+    GuiToggleGroup((Rectangle){0,LabelGroupLoc,(f32)LabelsW,LabelsH},TextJoin(Labels,ArrayCount(Labels),"\n"),&AnnotationState.CurrentLabel);
 
     if (IsKeyReleased(KEY_ONE))
     {
         AnnotationState.CurrentLabel = 0;
-        Active = 0;
     }
     else if (IsKeyReleased(KEY_TWO))
     {
         AnnotationState.CurrentLabel = 1;
-        Active = 1;
 
     }
     else if (IsKeyReleased(KEY_THREE))
     {
         AnnotationState.CurrentLabel = 2;
-        Active = 2;
 
     }
     else if (IsKeyReleased(KEY_FOUR))
     {
         AnnotationState.CurrentLabel = 3;
-        Active = 3;
 
     }
     else if (IsKeyReleased(KEY_FIVE))
     {
         AnnotationState.CurrentLabel = 4;
-        Active = 4;
 
     }
     else if (IsKeyReleased(KEY_SIX))
     {
         AnnotationState.CurrentLabel = 5;
-        Active = 5;
     }
 
     if (CheckCollisionPointRec(MousePosition,(Rectangle){0,0,PANELWIDTH,(float)ScreenHeight}))

@@ -47,12 +47,12 @@ struct annotation_page_state
     u32 TotalBbox; 
     s32 CurrentGesture;
     s32 PrevGesture;
+    s32 CurrentLabel;
     // union rlib_annotation_menu
     // {
     //     /* data */
     // };
     
-    u32 CurrentLabel;
 };
 
 struct bbox
