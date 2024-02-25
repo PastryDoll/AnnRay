@@ -60,6 +60,7 @@ internal inline
 void BoxManipulation(const Vector2 MousePosition)
 {
     const f32 e = 50;
+    u32 CurrentBbox = 0;
 
     if (IsKeyPressed(KEY_A))
     {
@@ -74,8 +75,7 @@ void BoxManipulation(const Vector2 MousePosition)
         {
             if (CheckCollisionPointRec(MousePosition,Bboxes[BoxId].Box))
             {
-                AnnotationState.CurrentBbox = BoxId;
-
+                CurrentBbox = BoxId;
                 // Right Logic || Left Logic
                 if  ((MousePosition.x > (Bboxes[BoxId].Box.x + Bboxes[BoxId].Box.width - e)) 
                     || (MousePosition.x < (Bboxes[BoxId].Box.x + e)))
@@ -124,6 +124,7 @@ void BoxManipulation(const Vector2 MousePosition)
                 CurrentCursorSprite = MOUSE_CURSOR_RESIZE_ALL;
                 Tap.x = MousePosition.x;
                 Tap.y = MousePosition.y;
+                AnnotationState.CurrentBbox = CurrentBbox;
                 isGrabbed = true;
             }
             else if (IsGestureDragging(AnnotationState.CurrentGesture))
