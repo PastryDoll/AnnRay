@@ -23,16 +23,18 @@ bool isGrabbed = false;
 //@TODO Make this better.  This is actually broken.. we need to be carefull of what we delete.. take a look on this.
 internal
 void DeleteBox(bbox Bboxes[], annotation_page_state *AnnotationState) {
-    u32 LabelToDelete = Bboxes[AnnotationState->CurrentBbox].Label;
-    if (AnnotationState->TotalBbox > 0) (AnnotationState->TotalBbox)--;
-    if ((LabelsTotal[LabelToDelete] > 0)) (LabelsTotal[LabelToDelete])--;
+    if (AnnotationState->CurrentBbox <  AnnotationState->TotalBbox)
+    {
+        u32 LabelToDelete = Bboxes[AnnotationState->CurrentBbox].Label;
+        if (AnnotationState->TotalBbox > 0) (AnnotationState->TotalBbox)--;
+        if ((LabelsTotal[LabelToDelete] > 0)) (LabelsTotal[LabelToDelete])--;
 
-    for (int i = AnnotationState->CurrentBbox; i < AnnotationState->TotalBbox; ++i) {
-        Bboxes[i] = Bboxes[i + 1];
-        printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+        for (int i = AnnotationState->CurrentBbox; i < AnnotationState->TotalBbox + 1; ++i) {
+            Bboxes[i] = Bboxes[i + 1];
+            printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+        }
+        AnnotationState->CurrentBbox = AnnotationState->TotalBbox;
     }
-    Bboxes[AnnotationState->TotalBbox] = {};
-    AnnotationState->CurrentBbox = AnnotationState->TotalBbox;
 }
 
 internal
@@ -229,7 +231,7 @@ void BoxCreation(const Vector2 MousePosition)
         AnnotationState.TotalBbox += 1;
         LabelsTotal[AnnotationState.CurrentLabel] += 1;
         AnnotationState.CurrentBbox = AnnotationState.TotalBbox;
-        printf("!!!!!!!!!!!\n");
+        printf("!!!!!!!!!!!NEW BOX\n");
         printf("PrevGesture: %u,%u\n", AnnotationState.PrevGesture,!(AnnotationState.PrevGesture & (GESTURE_NONE)));
         printf("CurrentGesture: %u\n", AnnotationState.CurrentGesture);
 
@@ -303,7 +305,7 @@ void RenderImageDisplay()
 
             //@TODO Maybe we do a fragment shader for rectangle drawing
 
-            for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox; ++BoxId)
+            for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox+1; ++BoxId)
             {
                 DrawRectangleLinesEx(Bboxes[BoxId].Box,15,LabelsColors[Bboxes[BoxId].Label]);
             }
