@@ -20,6 +20,47 @@ static u8 CurrentCursorSprite = 0;
 u32 CollisionState = NoHit;
 bool isGrabbed = false;
 
+char name[MAX_LENGTH + 1] = "\0";      // NOTE: One extra space required for null terminator char '\0'
+int letterCount = 0;
+
+internal 
+void TextInputBox(Rectangle rectangle, bool *Active)
+{
+    if (CheckCollisionPointRec(GetMousePosition(), rectangle))
+    {
+        CurrentCursorSprite = MOUSE_CURSOR_IBEAM;
+        int key = GetCharPressed();
+        while (key > 0)
+        {
+            // NOTE: Only allow keys in range [32..125]
+            if ((key >= 32) && (key <= 125) && (letterCount < MAX_LENGTH))
+            {
+                name[letterCount] = (char)key;
+                name[letterCount+1] = '\0'; // Add null terminator at the end of the string.
+                letterCount++;
+            }
+
+            key = GetCharPressed();  // Check next character in the queue
+        }
+
+        if (IsKeyPressed(KEY_BACKSPACE))
+        {
+            letterCount--;
+            if (letterCount < 0) letterCount = 0;
+            name[letterCount] = '\0';
+        }
+
+    }
+    DrawRectangleRec(rectangle, LIGHTGRAY);
+    DrawText(name, (int)rectangle.x + 5, (int)rectangle.y + 5, 20, MAROON);
+    if (letterCount < MAX_LENGTH)
+    {
+
+        // Draw blinking underscore char
+        if ((((u32)(GetTime()*2))%2) == 0) DrawText("|", (int)rectangle.x + 8 + MeasureText(name, 20), (int)rectangle.y + 5, 20, MAROON);
+    }
+}
+
 //@TODO Make this better.  This is actually broken.. we need to be carefull of what we delete.. take a look on this.
 internal
 void DeleteBox(bbox Bboxes[], annotation_page_state *AnnotationState) {
@@ -418,6 +459,7 @@ u32 DrawPanel()
 {
     Vector2 MousePosition = GetMousePosition();
     u32 ScreenHeight = GetScreenHeight();
+    if (CheckCollisionPointRec(MousePosition,(Rectangle){0,0,PANELWIDTH,(float)ScreenHeight})) CurrentCursorSprite = MOUSE_CURSOR_DEFAULT;
  
     DrawRectangle(0,0,PANELWIDTH,ScreenHeight,DARKBLUE);
 
@@ -461,10 +503,20 @@ u32 DrawPanel()
     // Add + to the end 
     Rectangle NewLabelRec = LabelGroupRec;
     NewLabelRec.y += (GuiGetStyle(TOGGLE, GROUP_PADDING) +LabelsH)*TotalLabels;
-    if (GuiButton(NewLabelRec,"+"))
-    {
-        TotalLabels += 1;
-    }
+    // internal bool clicked = false;
+    // if (GuiButton(NewLabelRec,"+"))
+    // {
+    //     clicked = true;
+    //     // TotalLabels += 1;
+    // }
+    // else
+    // {
+        
+    // }
+    // if (clicked)
+    // {
+    // }
+    TextInputBox(NewLabelRec);
 
 //
 //  Get Current Label from Panel interaction 
@@ -499,10 +551,7 @@ u32 DrawPanel()
         AnnotationState.CurrentLabel = 5;
     }
 
-    if (CheckCollisionPointRec(MousePosition,(Rectangle){0,0,PANELWIDTH,(float)ScreenHeight}))
-    {
-        CurrentCursorSprite = MOUSE_CURSOR_DEFAULT;
-    }
+
 
 // 
 // Draw Buttons
