@@ -28,7 +28,6 @@ void TextInputBox(Rectangle rectangle, bool *Active)
 {
     if (CheckCollisionPointRec(GetMousePosition(), rectangle))
     {
-        CurrentCursorSprite = MOUSE_CURSOR_IBEAM;
         int key = GetCharPressed();
         while (key > 0)
         {
@@ -52,12 +51,14 @@ void TextInputBox(Rectangle rectangle, bool *Active)
 
     }
     DrawRectangleRec(rectangle, LIGHTGRAY);
-    DrawText(name, (int)rectangle.x + 5, (int)rectangle.y + 5, 20, MAROON);
-    if (letterCount < MAX_LENGTH)
+    // GuiDrawText(name, GetTextBounds(TOGGLE, rectangle), GuiGetStyle(TOGGLE, TEXT_ALIGNMENT), GetColor(GuiGetStyle(TOGGLE, TEXT + STATE_NORMAL*3)));
+    DrawText(name, (u32)rectangle.x + 5, (u32)rectangle.y + 5, 20, BLACK);
+    if ((letterCount < MAX_LENGTH) && (*Active))
     {
 
         // Draw blinking underscore char
-        if ((((u32)(GetTime()*2))%2) == 0) DrawText("|", (int)rectangle.x + 8 + MeasureText(name, 20), (int)rectangle.y + 5, 20, MAROON);
+        CurrentCursorSprite = MOUSE_CURSOR_IBEAM;
+        if ((((u32)(GetTime()*2))%2) == 0) DrawText("|", (int)rectangle.x + 8 + MeasureText(name, 20), (u32)rectangle.y + 5, 20, BLACK);
     }
 }
 
@@ -503,20 +504,26 @@ u32 DrawPanel()
     // Add + to the end 
     Rectangle NewLabelRec = LabelGroupRec;
     NewLabelRec.y += (GuiGetStyle(TOGGLE, GROUP_PADDING) +LabelsH)*TotalLabels;
-    // internal bool clicked = false;
-    // if (GuiButton(NewLabelRec,"+"))
-    // {
-    //     clicked = true;
-    //     // TotalLabels += 1;
-    // }
+    internal bool clicked = false;
+    if (GuiButton(NewLabelRec,"+"))
+    {
+        clicked = true;
+        // TotalLabels += 1;
+    }
     // else
     // {
         
     // }
-    // if (clicked)
-    // {
-    // }
-    TextInputBox(NewLabelRec);
+    internal bool Active = true;
+    if (clicked)
+    {
+        TextInputBox(NewLabelRec, &Active);
+    }
+    if (IsKeyPressed(KEY_ENTER))
+    {
+        printf("Ented\n");
+        Active = false;
+    }
 
 //
 //  Get Current Label from Panel interaction 
