@@ -17,7 +17,7 @@
 #include "rlib_annray.h"
 
 #define TEST_FOLDER_PNG "../images_samplepng/"
-#define TEST_FOLDER_JPG "../test_material/images_sample"
+#define TEST_FOLDER_JPG "../test_material/samples2"
 #define PROJECT_FOLDER "../project"
 #define TEST_PIC "DJI_0325.JPG"
 

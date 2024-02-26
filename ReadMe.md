@@ -2,11 +2,11 @@
 
 A simple software written for raylib to help people annotate images for image detection neural networks.\\
 
+![alt text](sample.png)
+
 ## TODO
 
-- Add zoom
 - Save Annotations - and YOLO format
-- Add multiple labels
 - Add menu:
     - 1) Select project/folder, init new project etc
     - 2) Thumbnails.. visualize stats and project

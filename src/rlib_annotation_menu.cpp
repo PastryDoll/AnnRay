@@ -15,7 +15,7 @@ annotation_display AnnotationDisplay = {};
 bool first_frame = true;
 bool ReloadImage = false;
 u32 CurrentImageId = 0;
-u8 CurrentCursorSprite = 0;
+static u8 CurrentCursorSprite = 0;
 
 u32 CollisionState = NoHit;
 bool isGrabbed = false;
@@ -394,7 +394,7 @@ void RenderImageDisplay()
 
             for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox+1; ++BoxId)
             {
-                DrawRectangleLinesEx(Bboxes[BoxId].Box,15,LabelsColors[Bboxes[BoxId].Label]);
+                DrawRectangleLinesEx(Bboxes[BoxId].Box,2/AnnotationDisplay.camera.zoom,LabelsColors[Bboxes[BoxId].Label]);
             }
 
             DrawRectangleRec(Bboxes[AnnotationState.CurrentBbox].Box,WHITE);
