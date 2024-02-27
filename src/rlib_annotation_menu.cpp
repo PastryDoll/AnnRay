@@ -6,7 +6,8 @@
 char Labels[MAX_LENGTH][MAX_STRINGS] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
 u32 TotalLabels = 5;
 u32 LabelsTotal[MAX_STRINGS] = {};
-const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME};
+//@TODO Randomize the colors in a nice way;
+const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME}; 
 bbox Bboxes[16] = {};
 
 annotation_page_state AnnotationState = {};
@@ -23,11 +24,13 @@ bool isGrabbed = false;
 char name[MAX_LENGTH + 1] = "\0";      // NOTE: One extra space required for null terminator char '\0'
 int letterCount = 0;
 
+//@TODO block other shortkeys
 internal 
 void TextInputBox(Rectangle rectangle, bool *Active)
 {
     if (CheckCollisionPointRec(GetMousePosition(), rectangle))
     {
+        if (*Active) CurrentCursorSprite = MOUSE_CURSOR_IBEAM;
         int key = GetCharPressed();
         while (key > 0)
         {
@@ -50,14 +53,13 @@ void TextInputBox(Rectangle rectangle, bool *Active)
         }
 
     }
-    DrawRectangleRec(rectangle, LIGHTGRAY);
+    DrawRectangleRec(rectangle, BLUE);
     // GuiDrawText(name, GetTextBounds(TOGGLE, rectangle), GuiGetStyle(TOGGLE, TEXT_ALIGNMENT), GetColor(GuiGetStyle(TOGGLE, TEXT + STATE_NORMAL*3)));
     DrawText(name, (u32)rectangle.x + 5, (u32)rectangle.y + 5, 20, BLACK);
     if ((letterCount < MAX_LENGTH) && (*Active))
     {
 
         // Draw blinking underscore char
-        CurrentCursorSprite = MOUSE_CURSOR_IBEAM;
         if ((((u32)(GetTime()*2))%2) == 0) DrawText("|", (int)rectangle.x + 8 + MeasureText(name, 20), (u32)rectangle.y + 5, 20, BLACK);
     }
 }
@@ -502,27 +504,37 @@ u32 DrawPanel()
     GuiToggleGroup(LabelGroupRec,TextJoin(LabelsJoinedText,TotalLabels,"\n"),&AnnotationState.CurrentLabel);
 
     // Add + to the end 
-    Rectangle NewLabelRec = LabelGroupRec;
-    NewLabelRec.y += (GuiGetStyle(TOGGLE, GROUP_PADDING) +LabelsH)*TotalLabels;
-    internal bool clicked = false;
-    if (GuiButton(NewLabelRec,"+"))
+    //@TODO Factor this to a function
     {
-        clicked = true;
-        // TotalLabels += 1;
-    }
-    // else
-    // {
-        
-    // }
-    internal bool Active = true;
-    if (clicked)
-    {
-        TextInputBox(NewLabelRec, &Active);
-    }
-    if (IsKeyPressed(KEY_ENTER))
-    {
-        printf("Ented\n");
-        Active = false;
+        Rectangle NewLabelRec = LabelGroupRec;
+        internal u32 TotalLabelsTemp = TotalLabels;
+        NewLabelRec.y += (GuiGetStyle(TOGGLE, GROUP_PADDING) + LabelsH)*TotalLabels;
+        internal bool clicked = false;
+        internal bool writing = false;
+        internal bool Active = true;
+        if (!writing)
+        {
+            if(GuiButton(NewLabelRec,"+")) 
+            {
+                clicked = true;
+                Active = true;
+            }
+        }
+        if (clicked)
+        {
+            writing = true;
+            TextInputBox(NewLabelRec, &Active);
+        }
+        if (IsKeyPressed(KEY_ENTER))
+        {
+            Active = false;
+            writing = false;
+            clicked = false;
+            strcpy(Labels[TotalLabels], name);
+            strcpy(name,"");
+            letterCount = 0;
+            TotalLabels += 1;
+        }
     }
 
 //
@@ -715,6 +727,7 @@ void AnnotationPage(FilePathList PathList)
         DrawText(TextFormat("TotalBoxes: %u",AnnotationState.TotalBbox),10,40,10,WHITE);
         DrawText(TextFormat("CurrentLabel: %u",AnnotationState.CurrentLabel),10,50,10,WHITE);
         DrawText(TextFormat("Zoom: %f",AnnotationDisplay.camera.zoom),10,60,10,WHITE);
+        DrawText(TextFormat("TotalLabels: %u",TotalLabels),10,70,10,WHITE);
         // DrawText(TextFormat("CurrentBox: %u",AnnotationState.CurrentBbox),10,30,10,WHITE);
         DrawFPS(10,10);
 
