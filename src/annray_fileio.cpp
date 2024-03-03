@@ -1,17 +1,17 @@
-// internal const
-// void SaveDataToFile(const char *FileName, bbox *Boxes, u32 NumBoxes)
-// {
-//     FILE *file = fopen(FileName, "wb");
-//     if (file == NULL) {
-//         perror("Error opening file");
-//         return;
-//     }
-//     printf("%s\n",FileName);
+internal const
+void SaveDataToFile(const char *FileName, bbox *Boxes, u32 NumBoxes)
+{
+    FILE *file = fopen(FileName, "wb");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+    printf("%s\n",FileName);
 
-//     fwrite(Boxes, sizeof(BoundingBox), NumBoxes, file);
+    fwrite(Boxes, sizeof(BoundingBox), NumBoxes, file);
 
-//     fclose(file);
-// }
+    fclose(file);
+}
 
 // internal 
 // void ReadInMemoryAnn(const char *FileName, u32 NumBoxes)

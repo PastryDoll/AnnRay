@@ -1,7 +1,11 @@
 #include "rlib_annotation_menu.h"
+#include "annray_fileio.cpp"
+
 
 #define MAX_STRINGS 16
 #define MAX_LENGTH 16
+
+char* AnnPath = NULL;
 
 char Labels[MAX_LENGTH][MAX_STRINGS] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
 u32 TotalLabels = 5;
@@ -108,6 +112,7 @@ void DrawSegmentedLines(const segmented_lines SegmentedLines)
     }
 }
 
+// @TODO CLAMP BBOX TO IMAGE
 internal inline
 void BoxManipulation(const Vector2 MousePosition)
 {
@@ -313,6 +318,7 @@ void BoxCreation(const Vector2 MousePosition)
 
     if (IsGestureTapped(AnnotationState.CurrentGesture))
     {
+        printf("Taapppepee\n");
         Tap.x = MousePosition.x;
         Tap.y = MousePosition.y;
     }
@@ -355,6 +361,7 @@ void BoxCreation(const Vector2 MousePosition)
 
         }
     }
+    *BBox = GetCollisionRec(*BBox,{0,0,(f32)AnnotationDisplay.ImageTexture.width,(f32)AnnotationDisplay.ImageTexture.height});
     // If one goes too fast than the prevGesture can be also swipedown, not juts drag or hold.
     if (BBox->width*BBox->height > 10 && IsGestureReleased(AnnotationState.CurrentGesture,AnnotationState.PrevGesture)
         && (AnnotationState.TotalBbox < ArrayCount(Bboxes)-1))
@@ -366,8 +373,7 @@ void BoxCreation(const Vector2 MousePosition)
         printf("PrevGesture: %u,%u\n", AnnotationState.PrevGesture,!(AnnotationState.PrevGesture & (GESTURE_NONE)));
         printf("CurrentGesture: %u\n", AnnotationState.CurrentGesture);
 
-        // SaveDataToFile(AnnPath,Bboxes,TotalBbox);
-        // ReadInMemoryAnn(AnnPath, TotalBbox);
+        SaveDataToFile(AnnPath,Bboxes,AnnotationState.TotalBbox);
     }
 }
 
@@ -433,25 +439,27 @@ void RenderImageDisplay()
         BeginMode2D(AnnotationDisplay.camera);
             ClearBackground(BLACK);  // Clear render texture background color
             DrawTexture(AnnotationDisplay.ImageTexture,0,0,WHITE);
-
             //@TODO Maybe we do a fragment shader for rectangle drawing
+            Vector2 ImageOrigin =  GetWorldToScreen2D({0,0},AnnotationDisplay.camera);
+            Vector2 ImageEnd = GetWorldToScreen2D({(f32)AnnotationDisplay.ImageTexture.width,(f32)AnnotationDisplay.ImageTexture.height},AnnotationDisplay.camera);
+            BeginScissorMode(ImageOrigin.x,ImageOrigin.y,ImageEnd.x, ImageEnd.y);
+                for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox+1; ++BoxId)
+                {
+                    DrawRectangleLinesEx(Bboxes[BoxId].Box,2/AnnotationDisplay.camera.zoom,LabelsColors[Bboxes[BoxId].Label]);
+                }
 
-            for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox+1; ++BoxId)
-            {
-                DrawRectangleLinesEx(Bboxes[BoxId].Box,2/AnnotationDisplay.camera.zoom,LabelsColors[Bboxes[BoxId].Label]);
-            }
-
-            DrawRectangleRec(Bboxes[AnnotationState.CurrentBbox].Box,WHITE);
-            {
-                // u32 x = (f32)Bboxes[AnnotationState.CurrentBbox].Box.x;
-                // u32 y = (f32)Bboxes[AnnotationState.CurrentBbox].Box.y;
-                // u32 w = (f32)Bboxes[AnnotationState.CurrentBbox].Box.width;
-                // u32 h = (f32)Bboxes[AnnotationState.CurrentBbox].Box.height;
-                // DrawRectangle(x - 2,y - 2,6,6,RAYWHITE);
-                // DrawRectangle(x + w - 3,y - 2,6,6,RAYWHITE);
-                // DrawRectangle(x + w - 3,y + h - 3,6,6,RAYWHITE);
-                // DrawRectangle(x - 1,y + h - 3,6,6,RAYWHITE);
-            }
+                DrawRectangleRec(Bboxes[AnnotationState.CurrentBbox].Box,WHITE);
+                {
+                    // u32 x = (f32)Bboxes[AnnotationState.CurrentBbox].Box.x;
+                    // u32 y = (f32)Bboxes[AnnotationState.CurrentBbox].Box.y;
+                    // u32 w = (f32)Bboxes[AnnotationState.CurrentBbox].Box.width;
+                    // u32 h = (f32)Bboxes[AnnotationState.CurrentBbox].Box.height;
+                    // DrawRectangle(x - 2,y - 2,6,6,RAYWHITE);
+                    // DrawRectangle(x + w - 3,y - 2,6,6,RAYWHITE);
+                    // DrawRectangle(x + w - 3,y + h - 3,6,6,RAYWHITE);
+                    // DrawRectangle(x - 1,y + h - 3,6,6,RAYWHITE);
+                }
+            EndScissorMode();
         EndMode2D();
         DrawSegmentedLines((segmented_lines){MousePositionRelative.x,MousePositionRelative.y,RenderWidth,RenderHeight,LabelsColors[AnnotationState.CurrentLabel]});
     EndTextureMode();
@@ -660,15 +668,16 @@ void AnnotationPage(FilePathList PathList)
         AnnotationDisplay.DisplayTexture = LoadRenderTexture(FullImageDisplayWidth,FullImageDisplayHeight);
         SetTextureFilter(AnnotationDisplay.DisplayTexture.texture, TEXTURE_FILTER_BILINEAR);
         UnloadTexture(AnnotationDisplay.ImageTexture);
-        // const char *ImagePath = TextFormat("%s/%s",TEST_FOLDER_JPG, TEST_PIC);
         AnnotationDisplay.ImageTexture = LoadTexture(ImagePath);
         InitializeAnnotationDisplay();
 
-        // s32 count = 0;
-        // const char *ImageName = TextSplit(TEST_PIC,'.',&count)[0];
-        // const char *AnnPathTmp = TextFormat("%s/%s.ann",PROJECT_FOLDER, ImageName);
-        // char* AnnPath = (char*)malloc(strlen(AnnPathTmp) + 1);
-        // strcpy(AnnPath,AnnPathTmp);
+        s32 count = 0;
+        const char *ImageName = TextSplit(ImagePath,'/',&count)[count-1];
+        const char *AnnPathTmp = TextFormat("%s/%s.ann",PROJECT_FOLDER, ImageName);
+        if (AnnPath) free(AnnPath);
+        AnnPath = (char*)malloc(strlen(AnnPathTmp) + 1);
+        strcpy(AnnPath,AnnPathTmp);
+        printf("Ann Path %s\n", AnnPath);
 
         first_frame = false;
         ReloadImage = false;
