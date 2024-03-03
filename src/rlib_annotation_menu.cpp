@@ -13,6 +13,7 @@ u32 LabelsTotal[MAX_STRINGS] = {};
 //@TODO Randomize the colors in a nice way;
 const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME}; 
 bbox Bboxes[16] = {};
+bbox NewBoxes[16] = {};
 
 annotation_page_state AnnotationState = {};
 
@@ -155,7 +156,6 @@ void BoxManipulation(const Vector2 MousePosition)
                 {
                     CollisionState = InsideHit;
                 }
-                
                 break;
             }
             else
@@ -443,12 +443,14 @@ void RenderImageDisplay()
             Vector2 ImageOrigin =  GetWorldToScreen2D({0,0},AnnotationDisplay.camera);
             Vector2 ImageEnd = GetWorldToScreen2D({(f32)AnnotationDisplay.ImageTexture.width,(f32)AnnotationDisplay.ImageTexture.height},AnnotationDisplay.camera);
             BeginScissorMode(ImageOrigin.x,ImageOrigin.y,ImageEnd.x, ImageEnd.y);
+            // ReadInMemoryAnn(AnnPath,AnnotationState.TotalBbox,NewBoxes);
                 for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox+1; ++BoxId)
                 {
-                    DrawRectangleLinesEx(Bboxes[BoxId].Box,2/AnnotationDisplay.camera.zoom,LabelsColors[Bboxes[BoxId].Label]);
+                    // printf("File box: %f,%f,%f,%f\n", NewBoxes[BoxId].Box.x, NewBoxes[BoxId].Box.y, NewBoxes[BoxId].Box.height, NewBoxes[BoxId].Box.width);
+                    DrawRectangleLinesEx(NewBoxes[BoxId].Box,2/AnnotationDisplay.camera.zoom,LabelsColors[NewBoxes[BoxId].Label]);
                 }
 
-                DrawRectangleRec(Bboxes[AnnotationState.CurrentBbox].Box,WHITE);
+                DrawRectangleRec(NewBoxes[AnnotationState.CurrentBbox].Box,WHITE);
                 {
                     // u32 x = (f32)Bboxes[AnnotationState.CurrentBbox].Box.x;
                     // u32 y = (f32)Bboxes[AnnotationState.CurrentBbox].Box.y;

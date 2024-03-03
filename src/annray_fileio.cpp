@@ -13,20 +13,21 @@ void SaveDataToFile(const char *FileName, bbox *Boxes, u32 NumBoxes)
     fclose(file);
 }
 
-// internal 
-// void ReadInMemoryAnn(const char *FileName, u32 NumBoxes)
-// {
-//     FILE *file;
-//     file = fopen(FileName, "rb");
-//     if (file == NULL) {
-//         perror("Error opening file");
-//     }
-//     bbox Boxes[NumBoxes];
-//     fread(Boxes, sizeof(bbox), NumBoxes, file);
+internal 
+void ReadInMemoryAnn(const char *FileName, u32 NumBoxes, bbox *NewBoxes)
+{
+    FILE *file;
+    file = fopen(FileName, "rb");
+    if (file == NULL) {
+        perror("Error opening file");
+    }
+    bbox Boxes[NumBoxes];
+    fread(Boxes, sizeof(bbox), NumBoxes, file);
+    for (int i = 0; i < NumBoxes; ++i)
+    {
+        NewBoxes[i] = Boxes[i];
+        printf("File box: %f,%f,%f,%f\n", Boxes[i].Box.x, Boxes[i].Box.y, Boxes[i].Box.height, Boxes[i].Box.width);
 
-//     for (u32 BoxId = 0; BoxId < NumBoxes; ++BoxId)
-//     {  
-//         printf("id: %u,x: %f,y: %f,w: %f,h: %f,label: %u\n", BoxId,Boxes[BoxId].Box.x,Boxes[BoxId].Box.y,Boxes[BoxId].Box.width,Boxes[BoxId].Box.height, Boxes[BoxId].Label);
-//     }
-//     fclose(file);
-// }
+    }
+    fclose(file);
+}
