@@ -1,3 +1,5 @@
+#define MAX_TOTAL_BOXES 16
+
 enum disp_mode
 {
     DispMode_creation,
@@ -40,27 +42,23 @@ struct annotation_display
 // {
     
 // };
-
-
-struct annotation_page_state
-{   
-    u32 DisplayMode;
-    u32 CurrentBbox;
-    u32 TotalBbox; 
-    s32 CurrentGesture;
-    s32 PrevGesture;
-    s32 CurrentLabel;
-    // union rlib_annotation_menu
-    // {
-    //     /* data */
-    // };
-    
-};
-
 struct bbox
 {
     u32 Label;
     Rectangle Box;
+};
+struct bboxes
+{
+    u32 TotalBoxes;
+    bbox Boxes[MAX_TOTAL_BOXES];
+};
+struct annotation_page_state
+{   
+    u32 DisplayMode;
+    s32 CurrentGesture;
+    s32 PrevGesture;
+    s32 CurrentLabel;
+    u32 CurrentBbox;
 };
 
 struct zoom

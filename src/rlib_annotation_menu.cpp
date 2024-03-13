@@ -12,9 +12,8 @@ u32 TotalLabels = 5;
 u32 LabelsTotal[MAX_STRINGS] = {};
 //@TODO Randomize the colors in a nice way;
 const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME}; 
-bbox Bboxes[16] = {};
-bbox NewBoxes[16] = {};
 
+bboxes Bboxes = {};
 annotation_page_state AnnotationState = {};
 
 annotation_display AnnotationDisplay = {};
@@ -71,18 +70,18 @@ void TextInputBox(Rectangle rectangle, bool *Active)
 
 //@TODO Make this better.  This is actually broken.. we need to be carefull of what we delete.. take a look on this.
 internal
-void DeleteBox(bbox Bboxes[], annotation_page_state *AnnotationState) {
-    if (AnnotationState->CurrentBbox <  AnnotationState->TotalBbox)
+void DeleteBox(annotation_page_state AnnotationState, bboxes *Bboxes) {
+    if (AnnotationState.CurrentBbox <  Bboxes->TotalBoxes)
     {
-        u32 LabelToDelete = Bboxes[AnnotationState->CurrentBbox].Label;
-        if (AnnotationState->TotalBbox > 0) (AnnotationState->TotalBbox)--;
+        u32 LabelToDelete = Bboxes->Boxes[AnnotationState.CurrentBbox].Label;
+        if (Bboxes->TotalBoxes > 0) (Bboxes->TotalBoxes)--;
         if ((LabelsTotal[LabelToDelete] > 0)) (LabelsTotal[LabelToDelete])--;
 
-        for (int i = AnnotationState->CurrentBbox; i < AnnotationState->TotalBbox + 1; ++i) {
-            Bboxes[i] = Bboxes[i + 1];
+        for (int i = AnnotationState.CurrentBbox; i < Bboxes->TotalBoxes + 1; ++i) {
+            Bboxes->Boxes[i] = Bboxes->Boxes[i + 1];
             printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
         }
-        AnnotationState->CurrentBbox = AnnotationState->TotalBbox;
+        AnnotationState.CurrentBbox = Bboxes->TotalBoxes;
     }
 }
 
@@ -122,33 +121,33 @@ void BoxManipulation(const Vector2 MousePosition)
 
     if (IsKeyPressed(KEY_A))
     {
-        DeleteBox(Bboxes,&AnnotationState);
+        DeleteBox(AnnotationState, &Bboxes);
     }
     
     if (!isGrabbed)
     {
         //@TODO we need to accoutn for when we have overlaying of boxes
         //@TODO Check for corners also
-        for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox; ++BoxId)
+        for (u32 BoxId = 0; BoxId < Bboxes.TotalBoxes; ++BoxId)
         {
-            if (CheckCollisionPointRec(MousePosition,Bboxes[BoxId].Box))
+            if (CheckCollisionPointRec(MousePosition,Bboxes.Boxes[BoxId].Box))
             {
                 CurrentBbox = BoxId;
                 // Right Logic || Left Logic
-                if  (MousePosition.x > (Bboxes[BoxId].Box.x + Bboxes[BoxId].Box.width - e))
+                if  (MousePosition.x > (Bboxes.Boxes[BoxId].Box.x + Bboxes.Boxes[BoxId].Box.width - e))
                 {
                     CollisionState = HorizontalRightHit;
                 }
-                else if (MousePosition.x < (Bboxes[BoxId].Box.x + e))
+                else if (MousePosition.x < (Bboxes.Boxes[BoxId].Box.x + e))
                 {
                     CollisionState = HorizontalLeftHit;
                 }
                 // Botton Logic || Top Logic
-                else if (MousePosition.y > (Bboxes[BoxId].Box.y + Bboxes[BoxId].Box.height - e)) 
+                else if (MousePosition.y > (Bboxes.Boxes[BoxId].Box.y + Bboxes.Boxes[BoxId].Box.height - e)) 
                 {
                     CollisionState = VerticalBottomHit;
                 }
-                else if (MousePosition.y < (Bboxes[BoxId].Box.y + e))
+                else if (MousePosition.y < (Bboxes.Boxes[BoxId].Box.y + e))
                 {
                     CollisionState = VerticalTopHit;
                 }
@@ -170,7 +169,7 @@ void BoxManipulation(const Vector2 MousePosition)
         {
             if (IsGestureTapped(AnnotationState.CurrentGesture))
             {
-                AnnotationState.CurrentBbox = AnnotationState.TotalBbox;
+                AnnotationState.CurrentBbox = Bboxes.TotalBoxes;
             }
             if (IsGestureHoldingOrDragging(AnnotationState.CurrentGesture))
             {
@@ -196,8 +195,8 @@ void BoxManipulation(const Vector2 MousePosition)
             else if (IsGestureDragging(AnnotationState.CurrentGesture))
             {
                 CurrentCursorSprite = MOUSE_CURSOR_RESIZE_ALL;
-                Bboxes[AnnotationState.CurrentBbox].Box.x += MousePosition.x - Tap.x;
-                Bboxes[AnnotationState.CurrentBbox].Box.y += MousePosition.y - Tap.y;
+                Bboxes.Boxes[AnnotationState.CurrentBbox].Box.x += MousePosition.x - Tap.x;
+                Bboxes.Boxes[AnnotationState.CurrentBbox].Box.y += MousePosition.y - Tap.y;
                 Tap.x = MousePosition.x;
                 Tap.y = MousePosition.y;
             }
@@ -229,7 +228,7 @@ void BoxManipulation(const Vector2 MousePosition)
             {
                 f32 DeltaX = GetMouseDelta().x;
                 DeltaX = 1.0f/AnnotationDisplay.camera.zoom*DeltaX;
-                Bboxes[AnnotationState.CurrentBbox].Box.width += DeltaX;
+                Bboxes.Boxes[AnnotationState.CurrentBbox].Box.width += DeltaX;
             }
             else if (IsGestureReleased(AnnotationState.CurrentGesture, AnnotationState.PrevGesture))
             {
@@ -250,8 +249,8 @@ void BoxManipulation(const Vector2 MousePosition)
             {
                 f32 DeltaX = GetMouseDelta().x;
                 DeltaX = 1.0f/AnnotationDisplay.camera.zoom*DeltaX;
-                Bboxes[AnnotationState.CurrentBbox].Box.width -= DeltaX;
-                Bboxes[AnnotationState.CurrentBbox].Box.x += DeltaX;
+                Bboxes.Boxes[AnnotationState.CurrentBbox].Box.width -= DeltaX;
+                Bboxes.Boxes[AnnotationState.CurrentBbox].Box.x += DeltaX;
             }
             else if (IsGestureReleased(AnnotationState.CurrentGesture, AnnotationState.PrevGesture))
             {
@@ -272,8 +271,8 @@ void BoxManipulation(const Vector2 MousePosition)
             {
                 f32 DeltaY = GetMouseDelta().y;
                 DeltaY = 1.0f/AnnotationDisplay.camera.zoom*DeltaY;
-                Bboxes[AnnotationState.CurrentBbox].Box.height -= DeltaY;
-                Bboxes[AnnotationState.CurrentBbox].Box.y += DeltaY;
+                Bboxes.Boxes[AnnotationState.CurrentBbox].Box.height -= DeltaY;
+                Bboxes.Boxes[AnnotationState.CurrentBbox].Box.y += DeltaY;
             }
             else if (IsGestureReleased(AnnotationState.CurrentGesture, AnnotationState.PrevGesture))
             {
@@ -295,7 +294,7 @@ void BoxManipulation(const Vector2 MousePosition)
             {
                 f32 DeltaY = GetMouseDelta().y;
                 DeltaY = 1.0f/AnnotationDisplay.camera.zoom*DeltaY;
-                Bboxes[AnnotationState.CurrentBbox].Box.height += DeltaY;
+                Bboxes.Boxes[AnnotationState.CurrentBbox].Box.height += DeltaY;
             }
             else if (IsGestureReleased(AnnotationState.CurrentGesture, AnnotationState.PrevGesture))
             {
@@ -312,8 +311,8 @@ void BoxCreation(const Vector2 MousePosition)
 {
     CurrentCursorSprite = MOUSE_CURSOR_CROSSHAIR;
 
-    Rectangle *BBox = &Bboxes[AnnotationState.TotalBbox].Box;
-    Bboxes[AnnotationState.TotalBbox].Label = AnnotationState.CurrentLabel;
+    Rectangle *BBox = &Bboxes.Boxes[Bboxes.TotalBoxes].Box;
+    Bboxes.Boxes[Bboxes.TotalBoxes].Label = AnnotationState.CurrentLabel;
     internal Vector2 Tap = {};
 
     if (IsGestureTapped(AnnotationState.CurrentGesture))
@@ -364,16 +363,16 @@ void BoxCreation(const Vector2 MousePosition)
     *BBox = GetCollisionRec(*BBox,{0,0,(f32)AnnotationDisplay.ImageTexture.width,(f32)AnnotationDisplay.ImageTexture.height});
     // If one goes too fast than the prevGesture can be also swipedown, not juts drag or hold.
     if (BBox->width*BBox->height > 10 && IsGestureReleased(AnnotationState.CurrentGesture,AnnotationState.PrevGesture)
-        && (AnnotationState.TotalBbox < ArrayCount(Bboxes)-1))
+        && (Bboxes.TotalBoxes < MAX_TOTAL_BOXES-1))
     {
-        AnnotationState.TotalBbox += 1;
+        Bboxes.TotalBoxes  += 1;
         LabelsTotal[AnnotationState.CurrentLabel] += 1;
-        AnnotationState.CurrentBbox = AnnotationState.TotalBbox;
+        AnnotationState.CurrentBbox = Bboxes.TotalBoxes ;
         printf("!!!!!!!!!!!NEW BOX\n");
         printf("PrevGesture: %u,%u\n", AnnotationState.PrevGesture,!(AnnotationState.PrevGesture & (GESTURE_NONE)));
         printf("CurrentGesture: %u\n", AnnotationState.CurrentGesture);
 
-        SaveDataToFile(AnnPath,Bboxes,AnnotationState.TotalBbox);
+        SaveDataToFile(AnnPath,&Bboxes);
     }
 }
 
@@ -444,13 +443,13 @@ void RenderImageDisplay()
             Vector2 ImageEnd = GetWorldToScreen2D({(f32)AnnotationDisplay.ImageTexture.width,(f32)AnnotationDisplay.ImageTexture.height},AnnotationDisplay.camera);
             BeginScissorMode(ImageOrigin.x,ImageOrigin.y,ImageEnd.x, ImageEnd.y);
             // ReadInMemoryAnn(AnnPath,AnnotationState.TotalBbox,NewBoxes);
-                for (u32 BoxId = 0; BoxId < AnnotationState.TotalBbox+1; ++BoxId)
+                for (u32 BoxId = 0; BoxId < Bboxes.TotalBoxes+1; ++BoxId)
                 {
                     // printf("File box: %f,%f,%f,%f\n", NewBoxes[BoxId].Box.x, NewBoxes[BoxId].Box.y, NewBoxes[BoxId].Box.height, NewBoxes[BoxId].Box.width);
-                    DrawRectangleLinesEx(NewBoxes[BoxId].Box,2/AnnotationDisplay.camera.zoom,LabelsColors[NewBoxes[BoxId].Label]);
+                    DrawRectangleLinesEx(Bboxes.Boxes[BoxId].Box,2/AnnotationDisplay.camera.zoom,LabelsColors[Bboxes.Boxes[BoxId].Label]);
                 }
 
-                DrawRectangleRec(NewBoxes[AnnotationState.CurrentBbox].Box,WHITE);
+                DrawRectangleRec(Bboxes.Boxes[AnnotationState.CurrentBbox].Box,WHITE);
                 {
                     // u32 x = (f32)Bboxes[AnnotationState.CurrentBbox].Box.x;
                     // u32 y = (f32)Bboxes[AnnotationState.CurrentBbox].Box.y;
@@ -517,7 +516,7 @@ u32 DrawPanel()
     //@TODO Factor this to a function
     {
         Rectangle NewLabelRec = LabelGroupRec;
-        internal u32 TotalLabelsTemp = TotalLabels;
+        // internal u32 TotalLabelsTemp = TotalLabels;
         NewLabelRec.y += (GuiGetStyle(TOGGLE, GROUP_PADDING) + LabelsH)*TotalLabels;
         internal bool clicked = false;
         internal bool writing = false;
@@ -611,7 +610,7 @@ u32 DrawPanel()
 }
 
 internal
-void InitializeAnnotationDisplay()
+void InitializeAnnotationDisplayAndState(const char* AnnPath, annotation_page_state *State)
 {
 // 
 // Responsible to initialize new AnnotationDisplay
@@ -625,7 +624,8 @@ void InitializeAnnotationDisplay()
     f32 InitialZoom = RenderWidth/AnnotationDisplay.ImageTexture .width - 0.005;
     Vector2 InitialOffSet = {(RenderWidth - AnnotationDisplay.ImageTexture .width*InitialZoom)*0.5f,(RenderHeight - AnnotationDisplay.ImageTexture.height*InitialZoom)*0.5f};
     AnnotationDisplay.camera = {InitialOffSet,{0,0},0,InitialZoom};
-
+    ReadInMemoryAnn(AnnPath,&Bboxes);
+    // AnnotationState = *State;
 }
 
 internal
@@ -671,7 +671,6 @@ void AnnotationPage(FilePathList PathList)
         SetTextureFilter(AnnotationDisplay.DisplayTexture.texture, TEXTURE_FILTER_BILINEAR);
         UnloadTexture(AnnotationDisplay.ImageTexture);
         AnnotationDisplay.ImageTexture = LoadTexture(ImagePath);
-        InitializeAnnotationDisplay();
 
         s32 count = 0;
         const char *ImageName = TextSplit(ImagePath,'/',&count)[count-1];
@@ -683,6 +682,7 @@ void AnnotationPage(FilePathList PathList)
 
         first_frame = false;
         ReloadImage = false;
+        InitializeAnnotationDisplayAndState(AnnPath,&AnnotationState);
     }
 // 
 // Reset texture when resizing
@@ -692,7 +692,7 @@ void AnnotationPage(FilePathList PathList)
         UnloadRenderTexture(AnnotationDisplay.DisplayTexture);
         AnnotationDisplay.DisplayTexture = LoadRenderTexture(FullImageDisplayWidth,FullImageDisplayHeight);
         SetTextureFilter(AnnotationDisplay.DisplayTexture.texture, TEXTURE_FILTER_BILINEAR);
-        InitializeAnnotationDisplay();
+        InitializeAnnotationDisplayAndState(AnnPath,&AnnotationState);
 
     }
 // 
@@ -735,7 +735,7 @@ void AnnotationPage(FilePathList PathList)
 // 
         
         DrawText(TextFormat("CurrentBox: %u",AnnotationState.CurrentBbox),10,30,10,WHITE);
-        DrawText(TextFormat("TotalBoxes: %u",AnnotationState.TotalBbox),10,40,10,WHITE);
+        DrawText(TextFormat("TotalBoxes: %u",Bboxes.TotalBoxes),10,40,10,WHITE);
         DrawText(TextFormat("CurrentLabel: %u",AnnotationState.CurrentLabel),10,50,10,WHITE);
         DrawText(TextFormat("Zoom: %f",AnnotationDisplay.camera.zoom),10,60,10,WHITE);
         DrawText(TextFormat("TotalLabels: %u",TotalLabels),10,70,10,WHITE);
