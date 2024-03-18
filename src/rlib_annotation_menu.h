@@ -33,25 +33,26 @@ struct annotation_display
     RenderTexture2D DisplayTexture;
 };
 
-// struct annotation_page_state_creation
-// {
-    
-// };
-
-// struct annotation_page_state_manipulation
-// {
-    
-// };
 struct bbox
 {
     u32 Label;
     Rectangle Box;
 };
+
 struct bboxes
 {
     u32 TotalBoxes;
+    u32 TotalLabels;
+    u32 LabelsCount[MAX_STRINGS];
     bbox Boxes[MAX_TOTAL_BOXES];
 };
+
+struct project_labels
+{
+    u32 TotalLabels;
+    char Labels[MAX_LENGTH][MAX_STRINGS];
+};
+
 struct annotation_page_state
 {   
     u32 DisplayMode;

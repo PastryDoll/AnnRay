@@ -1,21 +1,25 @@
+#define MAX_STRINGS 16
+#define MAX_LENGTH 16
+
 #include "rlib_annotation_menu.h"
 #include "annray_fileio.cpp"
 
 
-#define MAX_STRINGS 16
-#define MAX_LENGTH 16
+//
+// Per project
+//
 
+// char Labels[MAX_LENGTH][MAX_STRINGS] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
+char Labels[MAX_LENGTH][MAX_STRINGS] = {};
+const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME}; //@TODO Randomize the colors in a nice way;
+
+//
+// Per Image
+//
+bboxes Bboxes = {};
 char* AnnPath = NULL;
 
-char Labels[MAX_LENGTH][MAX_STRINGS] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
-u32 TotalLabels = 5;
-u32 LabelsTotal[MAX_STRINGS] = {};
-//@TODO Randomize the colors in a nice way;
-const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME}; 
-
-bboxes Bboxes = {};
 annotation_page_state AnnotationState = {};
-
 annotation_display AnnotationDisplay = {};
 bool first_frame = true;
 bool ReloadImage = false;
@@ -75,7 +79,7 @@ void DeleteBox(annotation_page_state AnnotationState, bboxes *Bboxes) {
     {
         u32 LabelToDelete = Bboxes->Boxes[AnnotationState.CurrentBbox].Label;
         if (Bboxes->TotalBoxes > 0) (Bboxes->TotalBoxes)--;
-        if ((LabelsTotal[LabelToDelete] > 0)) (LabelsTotal[LabelToDelete])--;
+        if ((Bboxes->LabelsCount[LabelToDelete] > 0)) (Bboxes->LabelsCount[LabelToDelete])--;
 
         for (int i = AnnotationState.CurrentBbox; i < Bboxes->TotalBoxes + 1; ++i) {
             Bboxes->Boxes[i] = Bboxes->Boxes[i + 1];
@@ -317,7 +321,6 @@ void BoxCreation(const Vector2 MousePosition)
 
     if (IsGestureTapped(AnnotationState.CurrentGesture))
     {
-        printf("Taapppepee\n");
         Tap.x = MousePosition.x;
         Tap.y = MousePosition.y;
     }
@@ -366,13 +369,13 @@ void BoxCreation(const Vector2 MousePosition)
         && (Bboxes.TotalBoxes < MAX_TOTAL_BOXES-1))
     {
         Bboxes.TotalBoxes  += 1;
-        LabelsTotal[AnnotationState.CurrentLabel] += 1;
+        Bboxes.LabelsCount[AnnotationState.CurrentLabel] += 1;
         AnnotationState.CurrentBbox = Bboxes.TotalBoxes ;
         printf("!!!!!!!!!!!NEW BOX\n");
         printf("PrevGesture: %u,%u\n", AnnotationState.PrevGesture,!(AnnotationState.PrevGesture & (GESTURE_NONE)));
         printf("CurrentGesture: %u\n", AnnotationState.CurrentGesture);
 
-        SaveDataToFile(AnnPath,&Bboxes);
+        SaveAnnToFile(AnnPath,&Bboxes);
     }
 }
 
@@ -485,9 +488,9 @@ u32 DrawPanel()
 // 
 // Draw Labels on Panel
 // 
-    for (u32 LabelId = 0; LabelId < TotalLabels;  ++LabelId)
+    for (u32 LabelId = 0; LabelId < Bboxes.TotalLabels;  ++LabelId)
     {   
-        u32 N = LabelsTotal[LabelId];
+        u32 N = Bboxes.LabelsCount[LabelId];
         char N_str[20];
         sprintf(N_str, "%u", N);
         u32 LabelNWidth = MeasureText(N_str, LabelFontSize);
@@ -502,22 +505,21 @@ u32 DrawPanel()
         DrawText(N_str, TextLocX, TextLocY, LabelFontSize, BLACK);
     }
 
-    const char *LabelsJoinedText[TotalLabels];
-    for (u32 LabelId = 0; LabelId < TotalLabels; ++LabelId)
+    const char *LabelsJoinedText[Bboxes.TotalLabels];
+    for (u32 LabelId = 0; LabelId < Bboxes.TotalLabels; ++LabelId)
     {
         const char *LabelPtr = Labels[LabelId];
         LabelsJoinedText[LabelId] = LabelPtr;
     }
     Rectangle LabelGroupRec = (Rectangle){0,LabelGroupLoc,(float)LabelsW,LabelsH};
 
-    GuiToggleGroup(LabelGroupRec,TextJoin(LabelsJoinedText,TotalLabels,"\n"),&AnnotationState.CurrentLabel);
+    GuiToggleGroup(LabelGroupRec,TextJoin(LabelsJoinedText,Bboxes.TotalLabels,"\n"),&AnnotationState.CurrentLabel);
 
     // Add + to the end 
     //@TODO Factor this to a function
     {
         Rectangle NewLabelRec = LabelGroupRec;
-        // internal u32 TotalLabelsTemp = TotalLabels;
-        NewLabelRec.y += (GuiGetStyle(TOGGLE, GROUP_PADDING) + LabelsH)*TotalLabels;
+        NewLabelRec.y += (GuiGetStyle(TOGGLE, GROUP_PADDING) + LabelsH)*Bboxes.TotalLabels;
         internal bool clicked = false;
         internal bool writing = false;
         internal bool Active = true;
@@ -539,10 +541,12 @@ u32 DrawPanel()
             Active = false;
             writing = false;
             clicked = false;
-            strcpy(Labels[TotalLabels], name);
+            strcpy(Labels[Bboxes.TotalLabels], name);
             strcpy(name,"");
             letterCount = 0;
-            TotalLabels += 1;
+            Bboxes.TotalLabels += 1;
+            SaveAnnToFile(AnnPath,&Bboxes);
+            SaveLabelsToFile(Labels);
         }
     }
 
@@ -624,8 +628,11 @@ void InitializeAnnotationDisplayAndState(const char* AnnPath, annotation_page_st
     f32 InitialZoom = RenderWidth/AnnotationDisplay.ImageTexture .width - 0.005;
     Vector2 InitialOffSet = {(RenderWidth - AnnotationDisplay.ImageTexture .width*InitialZoom)*0.5f,(RenderHeight - AnnotationDisplay.ImageTexture.height*InitialZoom)*0.5f};
     AnnotationDisplay.camera = {InitialOffSet,{0,0},0,InitialZoom};
-    ReadInMemoryAnn(AnnPath,&Bboxes);
-    // AnnotationState = *State;
+    
+    ReadAnnFromFile(AnnPath,&Bboxes);
+    printf("OUSIDE TOTAL: %u\n", Bboxes.TotalLabels);
+    ReadLabelsFromFile(AnnPath,Labels);
+
 }
 
 internal
@@ -733,12 +740,11 @@ void AnnotationPage(FilePathList PathList)
 // 
 // Draw Debug info:
 // 
-        
         DrawText(TextFormat("CurrentBox: %u",AnnotationState.CurrentBbox),10,30,10,WHITE);
         DrawText(TextFormat("TotalBoxes: %u",Bboxes.TotalBoxes),10,40,10,WHITE);
         DrawText(TextFormat("CurrentLabel: %u",AnnotationState.CurrentLabel),10,50,10,WHITE);
         DrawText(TextFormat("Zoom: %f",AnnotationDisplay.camera.zoom),10,60,10,WHITE);
-        DrawText(TextFormat("TotalLabels: %u",TotalLabels),10,70,10,WHITE);
+        DrawText(TextFormat("TotalLabels: %u",Bboxes.TotalLabels),10,70,10,WHITE);
         // DrawText(TextFormat("CurrentBox: %u",AnnotationState.CurrentBbox),10,30,10,WHITE);
         DrawFPS(10,10);
 
