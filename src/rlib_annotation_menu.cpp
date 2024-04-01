@@ -363,7 +363,6 @@ void BoxCreation(const Vector2 MousePosition)
 
         }
     }
-    *BBox = GetCollisionRec(*BBox,{0,0,(f32)AnnotationDisplay.ImageTexture.width,(f32)AnnotationDisplay.ImageTexture.height});
     // If one goes too fast than the prevGesture can be also swipedown, not juts drag or hold.
     if (BBox->width*BBox->height > 10 && IsGestureReleased(AnnotationState.CurrentGesture,AnnotationState.PrevGesture)
         && (Bboxes.TotalBoxes < MAX_TOTAL_BOXES-1))
@@ -374,8 +373,6 @@ void BoxCreation(const Vector2 MousePosition)
         printf("!!!!!!!!!!!NEW BOX\n");
         printf("PrevGesture: %u,%u\n", AnnotationState.PrevGesture,!(AnnotationState.PrevGesture & (GESTURE_NONE)));
         printf("CurrentGesture: %u\n", AnnotationState.CurrentGesture);
-
-        SaveAnnToFile(AnnPath,&Bboxes);
     }
 }
 
@@ -442,13 +439,9 @@ void RenderImageDisplay()
             ClearBackground(BLACK);  // Clear render texture background color
             DrawTexture(AnnotationDisplay.ImageTexture,0,0,WHITE);
             //@TODO Maybe we do a fragment shader for rectangle drawing
-            Vector2 ImageOrigin =  GetWorldToScreen2D({0,0},AnnotationDisplay.camera);
-            Vector2 ImageEnd = GetWorldToScreen2D({(f32)AnnotationDisplay.ImageTexture.width,(f32)AnnotationDisplay.ImageTexture.height},AnnotationDisplay.camera);
-            BeginScissorMode(ImageOrigin.x,ImageOrigin.y,ImageEnd.x, ImageEnd.y);
-            // ReadInMemoryAnn(AnnPath,AnnotationState.TotalBbox,NewBoxes);
                 for (u32 BoxId = 0; BoxId < Bboxes.TotalBoxes+1; ++BoxId)
                 {
-                    // printf("File box: %f,%f,%f,%f\n", NewBoxes[BoxId].Box.x, NewBoxes[BoxId].Box.y, NewBoxes[BoxId].Box.height, NewBoxes[BoxId].Box.width);
+                    Bboxes.Boxes[BoxId].Box = GetCollisionRec(Bboxes.Boxes[BoxId].Box,{0,0,(f32)AnnotationDisplay.ImageTexture.width,(f32)AnnotationDisplay.ImageTexture.height});
                     DrawRectangleLinesEx(Bboxes.Boxes[BoxId].Box,2/AnnotationDisplay.camera.zoom,LabelsColors[Bboxes.Boxes[BoxId].Label]);
                 }
 
@@ -463,7 +456,6 @@ void RenderImageDisplay()
                     // DrawRectangle(x + w - 3,y + h - 3,6,6,RAYWHITE);
                     // DrawRectangle(x - 1,y + h - 3,6,6,RAYWHITE);
                 }
-            EndScissorMode();
         EndMode2D();
         DrawSegmentedLines((segmented_lines){MousePositionRelative.x,MousePositionRelative.y,RenderWidth,RenderHeight,LabelsColors[AnnotationState.CurrentLabel]});
     EndTextureMode();
@@ -537,7 +529,7 @@ u32 DrawPanel()
             writing = true;
             TextInputBox(NewLabelRec, &Active);
         }
-        if (IsKeyPressed(KEY_ENTER))
+        if (IsKeyPressed(KEY_ENTER) && (writing))
         {
             Active = false;
             writing = false;
@@ -634,7 +626,7 @@ void InitializeAnnotationDisplayAndState(const char* AnnPath, annotation_page_st
     Bboxes.TotalLabels = 5;
     printf("OUSIDE TOTAL: %u\n", Bboxes.TotalLabels);
     ReadLabelsFromFile(AnnPath,Labels);
-
+    AnnotationState.CurrentBbox = Bboxes.TotalBoxes;
 }
 
 internal
@@ -751,4 +743,6 @@ void AnnotationPage(FilePathList PathList)
         DrawFPS(10,10);
 
     EndDrawing();
+
+    SaveAnnToFile(AnnPath,&Bboxes);
 }
