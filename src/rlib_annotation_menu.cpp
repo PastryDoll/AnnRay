@@ -504,7 +504,8 @@ u32 DrawPanel()
         DrawRectangle(LabelsW + LabelsColorW, LabelY, LabelsH, LabelsH, LIGHTGRAY);
         DrawText(N_str, TextLocX, TextLocY, LabelFontSize, BLACK);
     }
-
+    
+    // Char array to char * array
     const char *LabelsJoinedText[Bboxes.TotalLabels];
     for (u32 LabelId = 0; LabelId < Bboxes.TotalLabels; ++LabelId)
     {
@@ -630,6 +631,7 @@ void InitializeAnnotationDisplayAndState(const char* AnnPath, annotation_page_st
     AnnotationDisplay.camera = {InitialOffSet,{0,0},0,InitialZoom};
     
     ReadAnnFromFile(AnnPath,&Bboxes);
+    Bboxes.TotalLabels = 5;
     printf("OUSIDE TOTAL: %u\n", Bboxes.TotalLabels);
     ReadLabelsFromFile(AnnPath,Labels);
 

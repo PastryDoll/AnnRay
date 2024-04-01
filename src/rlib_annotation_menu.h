@@ -39,7 +39,7 @@ struct bbox
     Rectangle Box;
 };
 
-struct bboxes
+struct __attribute__((packed)) bboxes
 {
     u32 TotalBoxes;
     u32 TotalLabels;

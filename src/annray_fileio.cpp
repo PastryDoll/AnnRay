@@ -3,16 +3,17 @@ void SaveAnnToFile(const char *FileName, const bboxes *Bboxes)
 {
     FILE *file = fopen(FileName, "wb");
     if (file == NULL) {
-        perror("Error opening file");
+        printf("Error Saving to file %s\n",FileName);
+        fclose(file);
         return;
     }
     printf("%s\n",FileName);
 
-    fwrite(Bboxes, sizeof(Bboxes->TotalBoxes),1, file);
-    fwrite(Bboxes, sizeof(Bboxes->TotalLabels),1, file);
+    fwrite(&(Bboxes->TotalBoxes), sizeof(Bboxes->TotalBoxes),1, file);
+    fwrite(&(Bboxes->TotalLabels), sizeof(Bboxes->TotalLabels),1, file);
     printf("SAVING TOTAL LABELS %u\n",(Bboxes->TotalLabels));
-    fwrite(Bboxes, sizeof(Bboxes->TotalLabels)*Bboxes->TotalLabels, 1, file);
-    fwrite(Bboxes, sizeof(bbox)*Bboxes->TotalBoxes,1, file);
+    fwrite(&(Bboxes->LabelsCount), sizeof(Bboxes->LabelsCount[0])*Bboxes->TotalLabels, 1, file);
+    fwrite(&(Bboxes->Boxes), sizeof(Bboxes->Boxes[0])*Bboxes->TotalBoxes,1, file);
     fclose(file);
 }
 
@@ -25,28 +26,18 @@ void ReadAnnFromFile(const char *FileName, bboxes *NewBboxes)
     file = fopen(FileName, "rb");
     if (file == NULL) {
         printf("Error opening file %s\n",FileName);
-        file = fopen(FileName, "wb");
-        if (file == NULL) {
-            printf("Error creating file %s\n", FileName);
-            assert(0);
-        }
-        fwrite(NewBboxes,sizeof(bboxes),1,file);
         fclose(file);
-    }
-
-    file = fopen(FileName, "rb");
-    if (file == NULL) {
-        printf("Error opening file %s\n",FileName);
-        exit(0);
+        return;
     }
 
     fread(&NewBboxes->TotalBoxes, sizeof(NewBboxes->TotalBoxes), 1, file);
-    fread(&NewBboxes->TotalBoxes, sizeof(NewBboxes->TotalLabels), 1, file);
+    printf("TOTAL BOXES: %u\n",NewBboxes->TotalBoxes);
+    fread(&NewBboxes->TotalLabels, sizeof(NewBboxes->TotalLabels), 1, file);
     printf("TOTAL LABELS: %u\n", NewBboxes->TotalLabels);
     if ( NewBboxes->TotalLabels < 5)  NewBboxes->TotalLabels = 5; //@TODO REMOVE THIS
     printf("TOTAL LABELS: %u\n", NewBboxes->TotalLabels);
-    fread(&NewBboxes->LabelsCount, sizeof(u32), NewBboxes->TotalLabels, file);
-    fread(&NewBboxes->TotalBoxes, sizeof(bbox), NewBboxes->TotalBoxes, file);
+    fread(&NewBboxes->LabelsCount, sizeof(NewBboxes->LabelsCount[0])*NewBboxes->TotalLabels, 1, file);
+    fread(&NewBboxes->Boxes, sizeof(NewBboxes->Boxes[0])*NewBboxes->TotalBoxes ,1, file);
     fclose(file);
 }
 
