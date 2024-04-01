@@ -83,7 +83,6 @@ void DeleteBox(annotation_page_state AnnotationState, bboxes *Bboxes) {
 
         for (int i = AnnotationState.CurrentBbox; i < Bboxes->TotalBoxes + 1; ++i) {
             Bboxes->Boxes[i] = Bboxes->Boxes[i + 1];
-            printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
         }
         AnnotationState.CurrentBbox = Bboxes->TotalBoxes;
     }
@@ -370,9 +369,6 @@ void BoxCreation(const Vector2 MousePosition)
         Bboxes.TotalBoxes  += 1;
         Bboxes.LabelsCount[AnnotationState.CurrentLabel] += 1;
         AnnotationState.CurrentBbox = Bboxes.TotalBoxes ;
-        printf("!!!!!!!!!!!NEW BOX\n");
-        printf("PrevGesture: %u,%u\n", AnnotationState.PrevGesture,!(AnnotationState.PrevGesture & (GESTURE_NONE)));
-        printf("CurrentGesture: %u\n", AnnotationState.CurrentGesture);
     }
 }
 
@@ -463,7 +459,7 @@ void RenderImageDisplay()
 
 internal 
 void ResetImage()
-{
+{   
     Bboxes = {0};
     SaveAnnToFile(AnnPath,&Bboxes);
     return;
@@ -474,6 +470,7 @@ u32 DrawPanel()
 {
     Vector2 MousePosition = GetMousePosition();
     u32 ScreenHeight = GetScreenHeight();
+    u32 ScreenWidth = GetScreenWidth();
     if (CheckCollisionPointRec(MousePosition,(Rectangle){0,0,PANELWIDTH,(float)ScreenHeight})) CurrentCursorSprite = MOUSE_CURSOR_DEFAULT;
  
     DrawRectangle(0,0,PANELWIDTH,ScreenHeight,DARKBLUE);
@@ -604,6 +601,8 @@ u32 DrawPanel()
 // Draw Buttons
 //
 
+    // Modes
+
     //@TODO Improve this.. maybe we do this computation not in runtime
     char ButtonsText[2][40] = {};
     TextCopy(ButtonsText[0],GuiIconText(ICON_BOX, "Annotation Mode"));
@@ -622,6 +621,21 @@ u32 DrawPanel()
             toggle = false;
             GuiToggle(bounds[i], ButtonsText[i], &toggle);
             if (toggle) AnnotationState.DisplayMode = i;
+        }
+    }
+
+    // Reset
+
+    {
+        internal bool waiting = false;
+        if (GuiButton({PANELWIDTH*0.8,10,PANELWIDTH*0.19,30},"Reset")) waiting = true;
+        if (waiting)
+        {
+            const char* buttons = "YES; NO";
+            s32 clicked = GuiMessageBox({(f32)ScreenWidth/2 - 100,(f32)ScreenHeight/2 - 75, 400, 150},"Reset Image", "Are you sure you want to delete all labels of this image ?",buttons);
+            if (clicked == 0) waiting = false;
+            else if (clicked == 1) ResetImage(), waiting = false;
+            else if (clicked == 2) waiting = false;
         }
     }
 
@@ -646,7 +660,6 @@ void InitializeAnnotationDisplayAndState(const char* AnnPath, annotation_page_st
     
     ReadAnnFromFile(AnnPath,&Bboxes);
     TotalLabels = 5;
-    printf("OUSIDE TOTAL: %u\n", TotalLabels);
     TotalLabels = ReadLabelsFromFile(AnnPath,Labels);
     AnnotationState.CurrentBbox = Bboxes.TotalBoxes;
 }
@@ -664,7 +677,6 @@ void AnnotationPage(FilePathList PathList)
     f32 FullImageDisplayWidth = ScreenWidth > PANELWIDTH ? ScreenWidth - PANELWIDTH : 0;
     f32 FullImageDisplayHeight = ScreenHeight;
 
-    // printf("Current: %u\n", AnnotationState.CurrentBbox);
 // 
 // Handle Input Events 
 //  
@@ -702,7 +714,6 @@ void AnnotationPage(FilePathList PathList)
         if (AnnPath) free(AnnPath);
         AnnPath = (char*)malloc(strlen(AnnPathTmp) + 1);
         strcpy(AnnPath,AnnPathTmp);
-        printf("Ann Path %s\n", AnnPath);
 
         first_frame = false;
         ReloadImage = false;
@@ -754,6 +765,7 @@ void AnnotationPage(FilePathList PathList)
                 (Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}, (Vector2){ 0, 0 }, 0.0f, WHITE);
         DrawPanel(); // Panel After RenderImageDisplay otherwise it breaks CursorSprite
         SetMouseCursor(CurrentCursorSprite); 
+
 // 
 // Draw Debug info:
 // 
