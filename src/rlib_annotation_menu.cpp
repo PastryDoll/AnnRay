@@ -4,13 +4,13 @@
 #include "rlib_annotation_menu.h"
 #include "annray_fileio.cpp"
 
-
 //
 // Per project
 //
 
 // char Labels[MAX_LENGTH][MAX_STRINGS] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
 char Labels[MAX_LENGTH][MAX_STRINGS] = {};
+u32 TotalLabels = {};
 const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME}; //@TODO Randomize the colors in a nice way;
 
 //
@@ -461,6 +461,14 @@ void RenderImageDisplay()
     EndTextureMode();
 }
 
+internal 
+void ResetImage()
+{
+    Bboxes = {0};
+    SaveAnnToFile(AnnPath,&Bboxes);
+    return;
+};
+
 internal
 u32 DrawPanel()
 {
@@ -480,7 +488,7 @@ u32 DrawPanel()
 // 
 // Draw Labels on Panel
 // 
-    for (u32 LabelId = 0; LabelId < Bboxes.TotalLabels;  ++LabelId)
+    for (u32 LabelId = 0; LabelId < TotalLabels;  ++LabelId)
     {   
         u32 N = Bboxes.LabelsCount[LabelId];
         char N_str[20];
@@ -498,21 +506,21 @@ u32 DrawPanel()
     }
     
     // Char array to char * array
-    const char *LabelsJoinedText[Bboxes.TotalLabels];
-    for (u32 LabelId = 0; LabelId < Bboxes.TotalLabels; ++LabelId)
+    const char *LabelsJoinedText[TotalLabels];
+    for (u32 LabelId = 0; LabelId < TotalLabels; ++LabelId)
     {
         const char *LabelPtr = Labels[LabelId];
         LabelsJoinedText[LabelId] = LabelPtr;
     }
     Rectangle LabelGroupRec = (Rectangle){0,LabelGroupLoc,(float)LabelsW,LabelsH};
 
-    GuiToggleGroup(LabelGroupRec,TextJoin(LabelsJoinedText,Bboxes.TotalLabels,"\n"),&AnnotationState.CurrentLabel);
+    GuiToggleGroup(LabelGroupRec,TextJoin(LabelsJoinedText,TotalLabels,"\n"),&AnnotationState.CurrentLabel);
 
     // Add + to the end 
     //@TODO Factor this to a function
     {
         Rectangle NewLabelRec = LabelGroupRec;
-        NewLabelRec.y += (GuiGetStyle(TOGGLE, GROUP_PADDING) + LabelsH)*Bboxes.TotalLabels;
+        NewLabelRec.y += (GuiGetStyle(TOGGLE, GROUP_PADDING) + LabelsH)*TotalLabels;
         internal bool clicked = false;
         internal bool writing = false;
         internal bool Active = true;
@@ -534,12 +542,12 @@ u32 DrawPanel()
             Active = false;
             writing = false;
             clicked = false;
-            strcpy(Labels[Bboxes.TotalLabels], name);
+            strcpy(Labels[TotalLabels], name);
             strcpy(name,"");
             letterCount = 0;
-            Bboxes.TotalLabels += 1;
+            TotalLabels += 1;
             SaveAnnToFile(AnnPath,&Bboxes);
-            SaveLabelsToFile(Labels);
+            SaveLabelsToFile(Labels, TotalLabels);
         }
     }
 
@@ -575,8 +583,22 @@ u32 DrawPanel()
     {
         AnnotationState.CurrentLabel = 5;
     }
-
-
+    else if (IsKeyReleased(KEY_SEVEN))
+    {
+        AnnotationState.CurrentLabel = 6;
+    }
+    else if (IsKeyReleased(KEY_EIGHT))
+    {
+        AnnotationState.CurrentLabel = 7;
+    }
+    else if (IsKeyReleased(KEY_NINE))
+    {
+        AnnotationState.CurrentLabel = 8;
+    }
+    else if (IsKeyReleased(KEY_ZERO))
+    {
+        AnnotationState.CurrentLabel = 9;
+    }
 
 // 
 // Draw Buttons
@@ -623,9 +645,9 @@ void InitializeAnnotationDisplayAndState(const char* AnnPath, annotation_page_st
     AnnotationDisplay.camera = {InitialOffSet,{0,0},0,InitialZoom};
     
     ReadAnnFromFile(AnnPath,&Bboxes);
-    Bboxes.TotalLabels = 5;
-    printf("OUSIDE TOTAL: %u\n", Bboxes.TotalLabels);
-    ReadLabelsFromFile(AnnPath,Labels);
+    TotalLabels = 5;
+    printf("OUSIDE TOTAL: %u\n", TotalLabels);
+    TotalLabels = ReadLabelsFromFile(AnnPath,Labels);
     AnnotationState.CurrentBbox = Bboxes.TotalBoxes;
 }
 
@@ -649,6 +671,7 @@ void AnnotationPage(FilePathList PathList)
     if (IsKeyPressed(KEY_R))
     {
         ReloadImage = true;
+        ResetImage();
     }
     else if (IsKeyPressed(KEY_RIGHT))
     {
@@ -738,7 +761,7 @@ void AnnotationPage(FilePathList PathList)
         DrawText(TextFormat("TotalBoxes: %u",Bboxes.TotalBoxes),10,40,10,WHITE);
         DrawText(TextFormat("CurrentLabel: %u",AnnotationState.CurrentLabel),10,50,10,WHITE);
         DrawText(TextFormat("Zoom: %f",AnnotationDisplay.camera.zoom),10,60,10,WHITE);
-        DrawText(TextFormat("TotalLabels: %u",Bboxes.TotalLabels),10,70,10,WHITE);
+        DrawText(TextFormat("TotalLabels: %u",TotalLabels),10,70,10,WHITE);
         // DrawText(TextFormat("CurrentBox: %u",AnnotationState.CurrentBbox),10,30,10,WHITE);
         DrawFPS(10,10);
 

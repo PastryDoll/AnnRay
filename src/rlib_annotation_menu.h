@@ -42,7 +42,6 @@ struct bbox
 struct __attribute__((packed)) bboxes
 {
     u32 TotalBoxes;
-    u32 TotalLabels;
     u32 LabelsCount[MAX_STRINGS];
     bbox Boxes[MAX_TOTAL_BOXES];
 };
