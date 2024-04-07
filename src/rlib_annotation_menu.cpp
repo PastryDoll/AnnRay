@@ -10,7 +10,7 @@
 
 // char Labels[MAX_LENGTH][MAX_STRINGS] = {"BOX", "STICKER", "COW", "DOG", "PNEUMOTORAX"};
 char Labels[MAX_LENGTH][MAX_STRINGS] = {};
-u32 TotalLabels = {};
+// u32 TotalLabels = {};
 const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME}; //@TODO Randomize the colors in a nice way;
 
 //
@@ -466,7 +466,7 @@ void ResetImage()
 };
 
 internal
-u32 DrawPanel()
+u32 DrawPanel(u32 TotalLabels)
 {
     Vector2 MousePosition = GetMousePosition();
     u32 ScreenHeight = GetScreenHeight();
@@ -485,6 +485,8 @@ u32 DrawPanel()
 // 
 // Draw Labels on Panel
 // 
+    GuiButton({100,500,100,100},GuiIconText(ICON_CROSS_SMALL, ""));
+    // GuiDrawText(GuiIconText(ICON_CROSS_SMALL, ""),{100,500,100,100},0,RED);
     for (u32 LabelId = 0; LabelId < TotalLabels;  ++LabelId)
     {   
         u32 N = Bboxes.LabelsCount[LabelId];
@@ -497,7 +499,7 @@ u32 DrawPanel()
         u32 TextLocY = (u32)ceil(LabelY + LabelNWHeight/2.0f);
 
         DrawRectangle(LabelsW, LabelY, LabelsColorW, LabelsH, LabelsColors[LabelId]);
-
+        
         DrawRectangle(LabelsW + LabelsColorW, LabelY, LabelsH, LabelsH, LIGHTGRAY);
         DrawText(N_str, TextLocX, TextLocY, LabelFontSize, BLACK);
     }
@@ -539,11 +541,12 @@ u32 DrawPanel()
             Active = false;
             writing = false;
             clicked = false;
+            printf("Name: %s\n", name);
             strcpy(Labels[TotalLabels], name);
             strcpy(name,"");
             letterCount = 0;
             TotalLabels += 1;
-            SaveAnnToFile(AnnPath,&Bboxes);
+            // SaveAnnToFile(AnnPath,&Bboxes);
             SaveLabelsToFile(Labels, TotalLabels);
         }
     }
@@ -559,22 +562,18 @@ u32 DrawPanel()
     else if (IsKeyReleased(KEY_TWO))
     {
         AnnotationState.CurrentLabel = 1;
-
     }
     else if (IsKeyReleased(KEY_THREE))
     {
         AnnotationState.CurrentLabel = 2;
-
     }
     else if (IsKeyReleased(KEY_FOUR))
     {
         AnnotationState.CurrentLabel = 3;
-
     }
     else if (IsKeyReleased(KEY_FIVE))
     {
         AnnotationState.CurrentLabel = 4;
-
     }
     else if (IsKeyReleased(KEY_SIX))
     {
@@ -602,7 +601,6 @@ u32 DrawPanel()
 //
 
     // Modes
-
     //@TODO Improve this.. maybe we do this computation not in runtime
     char ButtonsText[2][40] = {};
     TextCopy(ButtonsText[0],GuiIconText(ICON_BOX, "Annotation Mode"));
@@ -625,7 +623,6 @@ u32 DrawPanel()
     }
 
     // Reset
-
     {
         internal bool waiting = false;
         if (GuiButton({PANELWIDTH*0.8,10,PANELWIDTH*0.19,30},"Reset")) waiting = true;
@@ -639,11 +636,11 @@ u32 DrawPanel()
         }
     }
 
-    return(AnnotationState.CurrentLabel);
+    return(TotalLabels);
 }
 
 internal
-void InitializeAnnotationDisplayAndState(const char* AnnPath, annotation_page_state *State)
+u32 InitializeAnnotationDisplayAndState(const char* AnnPath, annotation_page_state *State)
 {
 // 
 // Responsible to initialize new AnnotationDisplay
@@ -658,10 +655,10 @@ void InitializeAnnotationDisplayAndState(const char* AnnPath, annotation_page_st
     Vector2 InitialOffSet = {(RenderWidth - AnnotationDisplay.ImageTexture .width*InitialZoom)*0.5f,(RenderHeight - AnnotationDisplay.ImageTexture.height*InitialZoom)*0.5f};
     AnnotationDisplay.camera = {InitialOffSet,{0,0},0,InitialZoom};
     
-    ReadAnnFromFile(AnnPath,&Bboxes);
-    TotalLabels = 5;
-    TotalLabels = ReadLabelsFromFile(AnnPath,Labels);
+    u32 TotalLabels = ReadLabelsFromFile(AnnPath,Labels);
+    TotalLabels = ReadAnnFromFile(AnnPath,&Bboxes);
     AnnotationState.CurrentBbox = Bboxes.TotalBoxes;
+    return TotalLabels;
 }
 
 internal
@@ -694,13 +691,13 @@ void AnnotationPage(FilePathList PathList)
     {
         ReloadImage = true;
         CurrentImageId -= CurrentImageId > 0 ? 1 : 0;
-
     }
     char *ImagePath = PathList.paths[CurrentImageId];
     
 // 
 // First frame initialization and manual reset
 // 
+    internal u32 TotalLabels = 0;
     if (ReloadImage || first_frame)
     {
         AnnotationDisplay.DisplayTexture = LoadRenderTexture(FullImageDisplayWidth,FullImageDisplayHeight);
@@ -717,7 +714,7 @@ void AnnotationPage(FilePathList PathList)
 
         first_frame = false;
         ReloadImage = false;
-        InitializeAnnotationDisplayAndState(AnnPath,&AnnotationState);
+        TotalLabels = InitializeAnnotationDisplayAndState(AnnPath,&AnnotationState);
     }
 // 
 // Reset texture when resizing
@@ -727,9 +724,9 @@ void AnnotationPage(FilePathList PathList)
         UnloadRenderTexture(AnnotationDisplay.DisplayTexture);
         AnnotationDisplay.DisplayTexture = LoadRenderTexture(FullImageDisplayWidth,FullImageDisplayHeight);
         SetTextureFilter(AnnotationDisplay.DisplayTexture.texture, TEXTURE_FILTER_BILINEAR);
-        InitializeAnnotationDisplayAndState(AnnPath,&AnnotationState);
-
+        TotalLabels = InitializeAnnotationDisplayAndState(AnnPath,&AnnotationState);
     }
+    assert(TotalLabels > 0);
 // 
 // Getting global DisplayMode
 // 
@@ -763,7 +760,7 @@ void AnnotationPage(FilePathList PathList)
         ClearBackground(PINK);
         DrawTexturePro(AnnotationDisplay.DisplayTexture.texture, (Rectangle){ 0.0f, 0.0f, (float)AnnotationDisplay.DisplayTexture.texture.width, (float)-AnnotationDisplay.DisplayTexture.texture.height},
                 (Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}, (Vector2){ 0, 0 }, 0.0f, WHITE);
-        DrawPanel(); // Panel After RenderImageDisplay otherwise it breaks CursorSprite
+        TotalLabels = DrawPanel(TotalLabels); // Panel After RenderImageDisplay otherwise it breaks CursorSprite
         SetMouseCursor(CurrentCursorSprite); 
 
 // 
@@ -779,5 +776,7 @@ void AnnotationPage(FilePathList PathList)
 
     EndDrawing();
 
-    SaveAnnToFile(AnnPath,&Bboxes);
+    TotalLabels = SaveAnnToFile(AnnPath,&Bboxes); //@SpeedUp Dont call this every
+    SaveLabelsToFile(Labels, TotalLabels);
+
 }
