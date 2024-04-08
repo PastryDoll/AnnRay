@@ -2,7 +2,7 @@ bool ShouldInitInventory = true;
 
 #include <pthread.h>
 
-#define MAX_THREADS 8 // You can adjust the number of threads based on your system's capabilities
+#define MAX_THREADS 8
 
 typedef struct {
     Image *previewImages;
@@ -31,7 +31,6 @@ void GenerateThumbnails(Image PreviewImages[], Texture PreviewTextures[], FilePa
     int remainder = PathList.count % numThreads;
     int index = 0;
 
-    // Load images in parallel
     for (int i = 0; i < numThreads; ++i) {
         threadArgs[i].previewImages = PreviewImages;
         threadArgs[i].pathList = PathList;
@@ -46,7 +45,6 @@ void GenerateThumbnails(Image PreviewImages[], Texture PreviewTextures[], FilePa
         pthread_join(threads[i], NULL);
     }
 
-    // Load textures and unload images in the main thread
     for (u32 PathIndex = 0; PathIndex < PathList.count; ++PathIndex) {
         PreviewTextures[PathIndex] = LoadTextureFromImage(PreviewImages[PathIndex]);
         UnloadImage(PreviewImages[PathIndex]);
