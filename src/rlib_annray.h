@@ -63,6 +63,7 @@ enum pages {
 
     FRONT_PAGE,
     ANNOTATION_PAGE,
+    INVENTORY_PAGE,
     EXIT,
     PAGE_COUNT
 };
@@ -70,4 +71,5 @@ enum pages {
 struct global_state
 {
     pages CurrentPage;
+    pages PreviousPage;
 };

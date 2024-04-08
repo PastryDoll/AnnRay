@@ -17,7 +17,7 @@
 #include "rlib_annray.h"
 
 #define TEST_FOLDER_PNG "../images_samplepng/"
-#define TEST_FOLDER_JPG "../test_material/samples2"
+#define TEST_FOLDER_JPG "../test_material/images_sample"
 #define PROJECT_FOLDER "../project"
 #define TEST_PIC "DJI_0325.JPG"
 
@@ -27,6 +27,8 @@
 #define PANELWIDTH (float)280
 #define IMAGEDISPLAYSIDEGAP (float)32
 
+global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAGE};
+
 #include "annray_math.h"
 #include "rlib_front_page.cpp"
 #include "rlib_annotation_page.cpp"
@@ -34,7 +36,6 @@
 
 #define TESTTHUMB 0
 
-global_state GlobalState = {.CurrentPage = FRONT_PAGE};
 
 int main()
 {
@@ -47,11 +48,6 @@ int main()
     Music FrontPageMusic = LoadMusicStream("../assets/awesomeness.wav");
     PlayMusicStream(FrontPageMusic);
 
-#if TESTTHUMB
-    Image PreviewImages[PathList.count];
-    Texture PreviewTextures[PathList.count];
-    GenerateThumbnails(PreviewImages, PreviewTextures, PathList);
-#endif
     bool running = true;
     while(running)
     {   
@@ -61,13 +57,21 @@ int main()
         case FRONT_PAGE:
         {
             GlobalState.CurrentPage = FrontPage(&FrontPageMusic);
+            GlobalState.PreviousPage = FRONT_PAGE;
         break;
         };
         case ANNOTATION_PAGE:
         {
             AnnotationPage(PathList);
-            break;
+        break;
         };
+        case INVENTORY_PAGE:
+        {
+            InventoryPage(PathList);
+            GlobalState.PreviousPage = INVENTORY_PAGE;
+
+        break;
+        }
         case EXIT:
         {
             StopMusicStream(FrontPageMusic);
