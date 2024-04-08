@@ -28,58 +28,53 @@
 #define IMAGEDISPLAYSIDEGAP (float)32
 
 #include "annray_math.h"
-#include "rlib_annotation_menu.cpp"
+#include "rlib_front_page.cpp"
+#include "rlib_annotation_page.cpp"
+#include "rlib_inventory_page.cpp"
 
 #define TESTTHUMB 0
 
-// internal
-// void GenerateThumbnails(Image PreviewImages[], Texture PreviewTextures[], FilePathList PathList)
-// {   
-//     for (u32 PathIndex = 0; PathIndex < PathList.count; ++PathIndex)
-//         {
-//             char *Path = *(PathList.paths + PathIndex);
-//             PreviewImages[PathIndex] = LoadImage(Path);
-//             ImageResize(&PreviewImages[PathIndex],128,128);
-//             PreviewTextures[PathIndex] = LoadTextureFromImage(PreviewImages[PathIndex]);
-//             UnloadImage(PreviewImages[PathIndex]);
-//         }
-//     return;
-// }
-
-// internal
-// void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
-// {
-//     for (u32 PathIndex = 0; PathIndex < PathList.count; ++PathIndex)
-//         {   
-//             Texture *texture = PreviewTextures + PathIndex;
-//             DrawTexturePro(*texture, (Rectangle){0,0,128,128},(Rectangle){0 + 110.f*PathIndex,0,100,100},(Vector2){0,0},0,WHITE);
-//         }
-// }
-
+global_state GlobalState = {.CurrentPage = FRONT_PAGE};
 
 int main()
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "AnnRay");
+    InitAudioDevice();
 
     const char *FolderPath = TEST_FOLDER_JPG;
     FilePathList PathList = LoadDirectoryFiles(FolderPath);
+    Music FrontPageMusic = LoadMusicStream("../assets/awesomeness.wav");
+    PlayMusicStream(FrontPageMusic);
 
 #if TESTTHUMB
     Image PreviewImages[PathList.count];
     Texture PreviewTextures[PathList.count];
     GenerateThumbnails(PreviewImages, PreviewTextures, PathList);
 #endif
-
-    while(!WindowShouldClose())
+    bool running = true;
+    while(running)
     {   
-        AnnotationPage(PathList);
-
-// #if TESTTHUMB
-//             DrawThumnails(PreviewTextures,PathList);
-// #endif
-
+        running = !WindowShouldClose();
+        switch (GlobalState.CurrentPage)
+        {
+        case FRONT_PAGE:
+        {
+            GlobalState.CurrentPage = FrontPage(&FrontPageMusic);
+        break;
+        };
+        case ANNOTATION_PAGE:
+        {
+            AnnotationPage(PathList);
+            break;
+        };
+        case EXIT:
+        {
+            StopMusicStream(FrontPageMusic);
+            running = false;
+        }
+        default: {};
+        };
     }
-
     CloseWindow();
 }

@@ -58,3 +58,16 @@ bool IsGestureReleased(s32 CurrGesture, s32 PrevGesture)
         (CurrGesture == (GESTURE_NONE))) return true;
     return false;
 };
+
+enum pages {
+
+    FRONT_PAGE,
+    ANNOTATION_PAGE,
+    EXIT,
+    PAGE_COUNT
+};
+
+struct global_state
+{
+    pages CurrentPage;
+};
