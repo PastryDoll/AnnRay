@@ -70,6 +70,6 @@ enum pages {
 
 struct global_state
 {
-    pages CurrentPage;
-    pages PreviousPage;
+    u32 CurrentPage;
+    u32 PreviousPage;
 };

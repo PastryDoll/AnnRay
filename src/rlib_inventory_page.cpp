@@ -71,13 +71,25 @@ void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
 {
     s32 ScreenHeight = GetScreenHeight();
     s32 ScreenWidth = GetScreenWidth();
+    f32 yPad = ScreenHeight*0.05f;
+    f32 xPad = PANELWIDTH + ScreenWidth*0.005f;
+    f32 GridRowWidth = ScreenWidth - PANELWIDTH;
+    f32 GridRowHeight = ScreenHeight - PANELWIDTH;
+    u32 ImagesPerRow = 4;
+    f32 yGap = 128;
+    f32 xGap = 110;
 
-    f32 y = 0.0f;
     for (u32 PathIndex = 0; PathIndex < PathList.count; ++PathIndex)
         {   
-            f32 x = ScreenWidth*0.4 + (PathIndex % 4)*110.f;
-            y += ((PathIndex + 1) % 4 == 0) * (128 + 20);
+            f32 y = (int)PathIndex/ImagesPerRow * yGap + yPad;
+            f32 x = (PathIndex % ImagesPerRow)*xGap + xPad;
             Texture *texture = PreviewTextures + PathIndex;
+            if (texture->width > texture->height)
+            {
+
+            }
+            else
+            f32 TextureRatio = texture->width/texture->height;
             DrawTexturePro(*texture, (Rectangle){0,0,128,128},(Rectangle){x,y,100,100},(Vector2){0,0},0,WHITE);
         }
 }
@@ -91,24 +103,33 @@ void InitializeInventoryPage(Image PreviewImages[], Texture PreviewTextures[], F
     }
 };
 
-// #if TESTTHUMB
-// #endif
+internal 
+void DrawLeftPanel()
+{
+    s32 ScreenHeight = GetScreenHeight();
+    s32 ScreenWidth = GetScreenWidth();
+    DrawRectangle(0,0, PANELWIDTH, ScreenWidth, BLACK);
+}
 
 internal
-void InventoryPage(FilePathList PathList)
+u32 InventoryPage(FilePathList PathList)
 {
     if (GlobalState.PreviousPage != INVENTORY_PAGE) ShouldInitInventory = true;
     else ShouldInitInventory = false;
-
 
     Image PreviewImages[PathList.count];
     Texture PreviewTextures[PathList.count];
     InitializeInventoryPage(PreviewImages, PreviewTextures, PathList);
     BeginDrawing();
         ClearBackground(BLUE);
+        DrawLeftPanel();
+
+        {
+            if(GuiButton({PANELWIDTH*0.6,10,PANELWIDTH*0.19,30},"BACK")) return FRONT_PAGE;
+        }
         DrawThumnails(PreviewTextures,PathList);
         DrawFPS(10,10);
     EndDrawing();
 
-
+    return INVENTORY_PAGE;
 };

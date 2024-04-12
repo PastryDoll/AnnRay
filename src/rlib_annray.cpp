@@ -34,9 +34,6 @@ global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAG
 #include "rlib_annotation_page.cpp"
 #include "rlib_inventory_page.cpp"
 
-#define TESTTHUMB 0
-
-
 int main()
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
@@ -62,12 +59,13 @@ int main()
         };
         case ANNOTATION_PAGE:
         {
-            AnnotationPage(PathList);
+             GlobalState.CurrentPage = AnnotationPage(PathList);
+             GlobalState.PreviousPage = ANNOTATION_PAGE;
         break;
         };
         case INVENTORY_PAGE:
         {
-            InventoryPage(PathList);
+            GlobalState.CurrentPage = InventoryPage(PathList);
             GlobalState.PreviousPage = INVENTORY_PAGE;
 
         break;

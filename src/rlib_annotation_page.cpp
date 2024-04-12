@@ -662,7 +662,7 @@ u32 InitializeAnnotationDisplayAndState(const char* AnnPath, annotation_page_sta
 }
 
 internal
-void AnnotationPage(FilePathList PathList)
+u32 AnnotationPage(FilePathList PathList)
 {
 //
 // Common Annotation Menu initializations
@@ -761,6 +761,13 @@ void AnnotationPage(FilePathList PathList)
         DrawTexturePro(AnnotationDisplay.DisplayTexture.texture, (Rectangle){ 0.0f, 0.0f, (float)AnnotationDisplay.DisplayTexture.texture.width, (float)-AnnotationDisplay.DisplayTexture.texture.height},
                 (Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}, (Vector2){ 0, 0 }, 0.0f, WHITE);
         TotalLabels = DrawPanel(TotalLabels); // Panel After RenderImageDisplay otherwise it breaks CursorSprite
+
+        // Back to Front Page
+
+        {
+            if(GuiButton({PANELWIDTH*0.6,10,PANELWIDTH*0.19,30},"BACK")) return FRONT_PAGE;
+        }
+
         SetMouseCursor(CurrentCursorSprite); 
 
 // 
@@ -779,4 +786,5 @@ void AnnotationPage(FilePathList PathList)
     TotalLabels = SaveAnnToFile(AnnPath,&Bboxes); //@SpeedUp Dont call this every
     SaveLabelsToFile(Labels, TotalLabels);
 
+    return ANNOTATION_PAGE;
 }

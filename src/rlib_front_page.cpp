@@ -1,5 +1,5 @@
 internal
-pages FrontPage(Music *FrontPageMuic)
+u32 FrontPage(Music *FrontPageMuic)
 {
     s32 ScreenHeight = GetScreenHeight();
     s32 ScreenWidth = GetScreenWidth();
