@@ -38,6 +38,7 @@ int main()
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "AnnRay");
+    SetWindowMinSize(PANELWIDTH + 50, PANELWIDTH + 50);
     InitAudioDevice();
 
     const char *FolderPath = TEST_FOLDER_JPG;

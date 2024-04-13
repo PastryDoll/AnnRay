@@ -17,7 +17,7 @@ void *loadImagesThread(void *args) {
     for (u32 PathIndex = threadArgs->start; PathIndex < threadArgs->end; ++PathIndex) {
         char *Path = *(threadArgs->pathList.paths + PathIndex);
         threadArgs->previewImages[PathIndex] = LoadImage(Path);
-        ImageResize(&threadArgs->previewImages[PathIndex], 128, 128);
+        ImageResize(&threadArgs->previewImages[PathIndex], 512, 512);
     }
 
     pthread_exit(NULL);
@@ -66,31 +66,56 @@ void GenerateThumbnails(Image PreviewImages[], Texture PreviewTextures[], FilePa
 //     return;
 // }
 
+//@TODO - Ideally it will use the aspect ratio of each pic.. but for now just to have something lets make a simples grid were all pics are squares
 internal
 void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
 {
+    f32 w = 200;
+    f32 h = 200;
+    f32 MinGapX = 10;
+    f32 MinGapY = 10;
+    f32 EffectiveW = w + MinGapX; 
+    f32 EffectiveH = h + 2*MinGapY;
     s32 ScreenHeight = GetScreenHeight();
     s32 ScreenWidth = GetScreenWidth();
     f32 yPad = ScreenHeight*0.05f;
-    f32 xPad = PANELWIDTH + ScreenWidth*0.005f;
-    f32 GridRowWidth = ScreenWidth - PANELWIDTH;
-    f32 GridRowHeight = ScreenHeight - PANELWIDTH;
-    u32 ImagesPerRow = 4;
-    f32 yGap = 128;
-    f32 xGap = 110;
+    f32 xPad = ScreenWidth*0.005f;
+    f32 GridRowWidth = ScreenWidth - PANELWIDTH - xPad*2;
+    f32 GridRowHeight = ScreenHeight - yPad;
+    u32 ImagesPerRow = (u32)((GridRowWidth - EffectiveW)/EffectiveW) + 1;
+    u32 ImagesPerColumn = (u32)(GridRowHeight/EffectiveH);
+    printf("ImagesPerRow %u\n",ImagesPerRow);
 
+    f32 UnusedX;
+    f32 GapX;
+    f32 x;
+    f32 y;
     for (u32 PathIndex = 0; PathIndex < PathList.count; ++PathIndex)
         {   
-            f32 y = (int)PathIndex/ImagesPerRow * yGap + yPad;
-            f32 x = (PathIndex % ImagesPerRow)*xGap + xPad;
-            Texture *texture = PreviewTextures + PathIndex;
-            if (texture->width > texture->height)
-            {
-
-            }
+            if (ImagesPerRow == 1)
+            {   
+                f32 cx = PANELWIDTH + xPad + GridRowWidth/2 - w/2;
+                x = cx > PANELWIDTH ? cx : PANELWIDTH;  
+                printf("X: %f\n", x);
+                printf("PANELWIDTH: %f\n", PANELWIDTH);
+                printf("GridRowWidth/2: %f\n", GridRowWidth);
+                printf("xPad: %f\n", xPad);
+                printf("w/2: %f\n", w/2);
+                printf("PANELWIDTH + xPad + GridRowWidth/2 - w/2: %f\n", PANELWIDTH + xPad + GridRowWidth/2 - w/2);
+            } 
             else
-            f32 TextureRatio = texture->width/texture->height;
-            DrawTexturePro(*texture, (Rectangle){0,0,128,128},(Rectangle){x,y,100,100},(Vector2){0,0},0,WHITE);
+            {
+                UnusedX = GridRowWidth - ImagesPerRow*EffectiveW;
+                GapX = UnusedX/(ImagesPerRow-1);
+                x = xPad + PANELWIDTH + PathIndex%ImagesPerRow*(EffectiveW + GapX);
+                printf("X: %f\n", x);
+                printf("Y: %f\n", y);
+                printf("UnusedX: %f\n", UnusedX);
+            }
+            y = (int)PathIndex/ImagesPerRow * EffectiveH + yPad;
+            Texture *texture = PreviewTextures + PathIndex;
+            DrawTexturePro(*texture, (Rectangle){0,0,(f32)texture->width,(f32)texture->height},(Rectangle){x,y,w,h},(Vector2){0,0},0,WHITE);
+
         }
 }
 
@@ -108,7 +133,7 @@ void DrawLeftPanel()
 {
     s32 ScreenHeight = GetScreenHeight();
     s32 ScreenWidth = GetScreenWidth();
-    DrawRectangle(0,0, PANELWIDTH, ScreenWidth, BLACK);
+    DrawRectangle(0,0, PANELWIDTH, ScreenHeight, BLACK);
 }
 
 internal
