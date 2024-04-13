@@ -70,6 +70,7 @@ void GenerateThumbnails(Image PreviewImages[], Texture PreviewTextures[], FilePa
 internal
 void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
 {
+    f32 internal ScrollBarY = -10;
     f32 w = 200;
     f32 h = 200;
     f32 MinGapX = 10;
@@ -78,12 +79,13 @@ void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
     f32 EffectiveH = h + 2*MinGapY;
     s32 ScreenHeight = GetScreenHeight();
     s32 ScreenWidth = GetScreenWidth();
-    f32 yPad = ScreenHeight*0.05f;
+    f32 yPad = ScreenHeight*0.01f;
     f32 xPad = ScreenWidth*0.005f;
     f32 GridRowWidth = ScreenWidth - PANELWIDTH - xPad*2;
     f32 GridRowHeight = ScreenHeight - yPad;
     u32 ImagesPerRow = (u32)((GridRowWidth - EffectiveW)/EffectiveW) + 1;
     u32 ImagesPerColumn = (u32)(GridRowHeight/EffectiveH);
+
     printf("ImagesPerRow %u\n",ImagesPerRow);
 
     f32 UnusedX;
@@ -112,11 +114,19 @@ void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
                 printf("Y: %f\n", y);
                 printf("UnusedX: %f\n", UnusedX);
             }
-            y = (int)PathIndex/ImagesPerRow * EffectiveH + yPad;
+            y = (int)PathIndex/ImagesPerRow * EffectiveH + yPad - ScrollBarY + 10;
             Texture *texture = PreviewTextures + PathIndex;
             DrawTexturePro(*texture, (Rectangle){0,0,(f32)texture->width,(f32)texture->height},(Rectangle){x,y,w,h},(Vector2){0,0},0,WHITE);
 
         }
+
+    f32 wheel = GetMouseWheelMove();
+    if (wheel != 0)
+    {
+        ScrollBarY -= wheel;
+        if (ScrollBarY < -10) ScrollBarY = -10;
+    }
+    DrawRectangleRounded((Rectangle){ScreenWidth - MinGapX, ScrollBarY, MinGapX, 100}, 10, 10, RED); //@TODO - Make opacity fade in-out
 }
 
 internal
@@ -148,7 +158,6 @@ u32 InventoryPage(FilePathList PathList)
     BeginDrawing();
         ClearBackground(BLUE);
         DrawLeftPanel();
-
         {
             if(GuiButton({PANELWIDTH*0.6,10,PANELWIDTH*0.19,30},"BACK")) return FRONT_PAGE;
         }
