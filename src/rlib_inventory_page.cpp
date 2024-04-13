@@ -50,29 +50,14 @@ void GenerateThumbnails(Image PreviewImages[], Texture PreviewTextures[], FilePa
         UnloadImage(PreviewImages[PathIndex]);
     }
 }
-//@SpeedUp We have to find a nice way to do this.. bc it can be very slow.. we might parallelize and use a finite window
-// If not enough we can resize images and save
-// internal
-// void GenerateThumbnails(Image PreviewImages[], Texture PreviewTextures[], FilePathList PathList)
-// {   
-//     for (u32 PathIndex = 0; PathIndex < PathList.count; ++PathIndex)
-//         {
-//             char *Path = *(PathList.paths + PathIndex);
-//             PreviewImages[PathIndex] = LoadImage(Path);
-//             ImageResize(&PreviewImages[PathIndex],128,128);
-//             PreviewTextures[PathIndex] = LoadTextureFromImage(PreviewImages[PathIndex]);
-//             UnloadImage(PreviewImages[PathIndex]);
-//         }
-//     return;
-// }
 
 //@TODO - Ideally it will use the aspect ratio of each pic.. but for now just to have something lets make a simples grid were all pics are squares
 internal
 void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
 {
-    f32 internal ScrollBarY = -10;
-    f32 w = 200;
-    f32 h = 200;
+    f32 internal ScrollBarY = 0;
+    f32 w = 220;
+    f32 h = 220;
     f32 MinGapX = 10;
     f32 MinGapY = 10;
     f32 EffectiveW = w + MinGapX; 
@@ -85,8 +70,8 @@ void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
     f32 GridRowHeight = ScreenHeight - yPad;
     u32 ImagesPerRow = (u32)((GridRowWidth - EffectiveW)/EffectiveW) + 1;
     u32 ImagesPerColumn = (u32)(GridRowHeight/EffectiveH);
+    f32 ScrollToY = ((u32)(PathList.count-1)/ImagesPerRow*EffectiveH - (ScreenHeight - EffectiveH))/ScreenHeight;
 
-    printf("ImagesPerRow %u\n",ImagesPerRow);
 
     f32 UnusedX;
     f32 GapX;
@@ -98,35 +83,27 @@ void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
             {   
                 f32 cx = PANELWIDTH + xPad + GridRowWidth/2 - w/2;
                 x = cx > PANELWIDTH ? cx : PANELWIDTH;  
-                printf("X: %f\n", x);
-                printf("PANELWIDTH: %f\n", PANELWIDTH);
-                printf("GridRowWidth/2: %f\n", GridRowWidth);
-                printf("xPad: %f\n", xPad);
-                printf("w/2: %f\n", w/2);
-                printf("PANELWIDTH + xPad + GridRowWidth/2 - w/2: %f\n", PANELWIDTH + xPad + GridRowWidth/2 - w/2);
             } 
             else
             {
                 UnusedX = GridRowWidth - ImagesPerRow*EffectiveW;
                 GapX = UnusedX/(ImagesPerRow-1);
                 x = xPad + PANELWIDTH + PathIndex%ImagesPerRow*(EffectiveW + GapX);
-                printf("X: %f\n", x);
-                printf("Y: %f\n", y);
-                printf("UnusedX: %f\n", UnusedX);
             }
-            y = (int)PathIndex/ImagesPerRow * EffectiveH + yPad - ScrollBarY + 10;
+            y = (u32)PathIndex/ImagesPerRow * EffectiveH + yPad - ScrollBarY*ScrollToY;
+            if (PathIndex == PathList.count-1) printf("Y: %f\n", y);
             Texture *texture = PreviewTextures + PathIndex;
             DrawTexturePro(*texture, (Rectangle){0,0,(f32)texture->width,(f32)texture->height},(Rectangle){x,y,w,h},(Vector2){0,0},0,WHITE);
-
         }
 
-    f32 wheel = GetMouseWheelMove();
-    if (wheel != 0)
+    f32 Wheel = GetMouseWheelMove();
+    if (Wheel != 0)
     {
-        ScrollBarY -= wheel;
-        if (ScrollBarY < -10) ScrollBarY = -10;
+        ScrollBarY -= Wheel;
+        if (ScrollBarY < 0) ScrollBarY = 0;
+        if (ScrollBarY > ScreenHeight) ScrollBarY = ScreenHeight;
     }
-    DrawRectangleRounded((Rectangle){ScreenWidth - MinGapX, ScrollBarY, MinGapX, 100}, 10, 10, RED); //@TODO - Make opacity fade in-out
+    DrawRectangleRounded((Rectangle){ScreenWidth - MinGapX, ScrollBarY-10, MinGapX, 100}, 10, 10, RED); //@TODO - Make opacity fade in-out
 }
 
 internal
