@@ -64,6 +64,7 @@ enum pages {
     FRONT_PAGE,
     ANNOTATION_PAGE,
     INVENTORY_PAGE,
+    EXPORT_PAGE,
     EXIT,
     PAGE_COUNT
 };

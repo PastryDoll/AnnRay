@@ -33,6 +33,7 @@ global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAG
 #include "rlib_front_page.cpp"
 #include "rlib_annotation_page.cpp"
 #include "rlib_inventory_page.cpp"
+#include "rlib_export_page.cpp"
 
 int main()
 {
@@ -68,6 +69,13 @@ int main()
         {
             GlobalState.CurrentPage = InventoryPage(PathList);
             GlobalState.PreviousPage = INVENTORY_PAGE;
+
+        break;
+        }
+        case EXPORT_PAGE:
+        {
+            GlobalState.CurrentPage = ExportPage(PathList);
+            GlobalState.PreviousPage = EXPORT_PAGE;
 
         break;
         }

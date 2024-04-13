@@ -91,7 +91,6 @@ void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
                 x = xPad + PANELWIDTH + PathIndex%ImagesPerRow*(EffectiveW + GapX);
             }
             y = (u32)PathIndex/ImagesPerRow * EffectiveH + yPad - ScrollBarY*ScrollToY;
-            if (PathIndex == PathList.count-1) printf("Y: %f\n", y);
             Texture *texture = PreviewTextures + PathIndex;
             DrawTexturePro(*texture, (Rectangle){0,0,(f32)texture->width,(f32)texture->height},(Rectangle){x,y,w,h},(Vector2){0,0},0,WHITE);
         }
