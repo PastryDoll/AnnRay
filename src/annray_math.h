@@ -11,7 +11,6 @@ Pow(f32 A, f32 B)
 inline u32
 RoundReal32ToUInt32(f32 F)
 {
-    // TODO(casey): Replace with SSE
     u32 Result = (u32)(F + 0.5f);
     return(Result);
 }
@@ -118,7 +117,6 @@ Square(f32 A)
 inline f32 
 SquareRoot(f32 A)
 {
-    // TODO(casey): Replace with SSE
     f32 Result = (f32)sqrt(A);
     return(Result);
 }

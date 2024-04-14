@@ -7,14 +7,14 @@
 #include <time.h>
 #include <assert.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <pthread.h>
+#include <errno.h>
 
 #include "raylib.h"
-
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 #include "raymath.h"
-
-#include "rlib_annray.h"
 
 #define TEST_FOLDER_PNG "../images_samplepng/"
 #define TEST_FOLDER_JPG "../test_material/images_sample"
@@ -27,9 +27,15 @@
 #define PANELWIDTH (float)280
 #define IMAGEDISPLAYSIDEGAP (float)32
 
+#define MAX_STRINGS 16
+#define MAX_LENGTH 16
+
+#include "rlib_annray.h"
+#include "annray_math.h"
+
 global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAGE};
 
-#include "annray_math.h"
+#include "annray_fileio.cpp"
 #include "rlib_front_page.cpp"
 #include "rlib_annotation_page.cpp"
 #include "rlib_inventory_page.cpp"

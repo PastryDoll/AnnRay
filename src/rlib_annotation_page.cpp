@@ -1,8 +1,4 @@
-#define MAX_STRINGS 16
-#define MAX_LENGTH 16
-
 #include "rlib_annotation_page.h"
-#include "annray_fileio.cpp"
 
 //
 // Per project

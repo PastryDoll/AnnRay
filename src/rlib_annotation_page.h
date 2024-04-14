@@ -1,5 +1,3 @@
-#define MAX_TOTAL_BOXES 16
-
 enum disp_mode
 {
     DispMode_creation,
@@ -31,19 +29,6 @@ struct annotation_display
     Camera2D camera;
     Texture ImageTexture;
     RenderTexture2D DisplayTexture;
-};
-
-struct bbox
-{
-    u32 Label;
-    Rectangle Box;
-};
-
-struct __attribute__((packed)) bboxes
-{
-    u32 TotalBoxes;
-    u32 LabelsCount[MAX_STRINGS];
-    bbox Boxes[MAX_TOTAL_BOXES];
 };
 
 struct project_labels

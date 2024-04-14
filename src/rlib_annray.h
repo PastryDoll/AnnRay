@@ -23,6 +23,8 @@ typedef double f64;
 #define F32Min -FLT_MAX
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 
+#define MAX_TOTAL_BOXES 16
+
 internal inline
 bool IsGestureTapped(s32 Gesture)
 {
@@ -73,4 +75,17 @@ struct global_state
 {
     u32 CurrentPage;
     u32 PreviousPage;
+};
+
+struct bbox
+{
+    u32 Label;
+    Rectangle Box;
+};
+
+struct __attribute__((packed)) bboxes
+{
+    u32 TotalBoxes;
+    u32 LabelsCount[MAX_STRINGS];
+    bbox Boxes[MAX_TOTAL_BOXES];
 };
