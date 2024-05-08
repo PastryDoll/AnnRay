@@ -64,6 +64,7 @@ bool IsGestureReleased(s32 CurrGesture, s32 PrevGesture)
 enum pages {
 
     FRONT_PAGE,
+    NEW_PROJECT_PAGE,
     ANNOTATION_PAGE,
     INVENTORY_PAGE,
     EXPORT_PAGE,

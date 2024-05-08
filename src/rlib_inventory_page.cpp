@@ -65,11 +65,10 @@ void DrawThumnails(Texture PreviewTextures[], FilePathList PathList)
     f32 yPad = ScreenHeight*0.01f;
     f32 xPad = ScreenWidth*0.005f;
     f32 GridRowWidth = ScreenWidth - PANELWIDTH - xPad*2;
-    f32 GridRowHeight = ScreenHeight - yPad;
+    // f32 GridRowHeight = ScreenHeight - yPad;
     u32 ImagesPerRow = (u32)((GridRowWidth - EffectiveW)/EffectiveW) + 1;
-    u32 ImagesPerColumn = (u32)(GridRowHeight/EffectiveH);
+    // u32 ImagesPerColumn = (u32)(GridRowHeight/EffectiveH);
     f32 ScrollToY = ((u32)(PathList.count-1)/ImagesPerRow*EffectiveH - (ScreenHeight - EffectiveH))/ScreenHeight;
-
 
     f32 UnusedX;
     f32 GapX;
@@ -116,7 +115,6 @@ internal
 void DrawLeftPanel()
 {
     s32 ScreenHeight = GetScreenHeight();
-    s32 ScreenWidth = GetScreenWidth();
     DrawRectangle(0,0, PANELWIDTH, ScreenHeight, BLACK);
 }
 

@@ -36,7 +36,9 @@
 global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAGE};
 
 #include "annray_fileio.cpp"
+#include "rlib_UIcommons.cpp"
 #include "rlib_front_page.cpp"
+#include "rlib_new_project_page.cpp"
 #include "rlib_annotation_page.cpp"
 #include "rlib_inventory_page.cpp"
 #include "rlib_export_page.cpp"
@@ -46,6 +48,7 @@ int main()
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "AnnRay");
     SetWindowMinSize(PANELWIDTH + 50, PANELWIDTH + 50);
+    SetTargetFPS(120);
     InitAudioDevice();
 
     const char *FolderPath = TEST_FOLDER_JPG;
@@ -63,6 +66,12 @@ int main()
         {
             GlobalState.CurrentPage = FrontPage(&FrontPageMusic);
             GlobalState.PreviousPage = FRONT_PAGE;
+        break;
+        };
+        case NEW_PROJECT_PAGE:
+        {
+             GlobalState.CurrentPage = NewProjectPage(PathList);
+             GlobalState.PreviousPage = NEW_PROJECT_PAGE;
         break;
         };
         case ANNOTATION_PAGE:
