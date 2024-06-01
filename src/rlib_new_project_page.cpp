@@ -8,6 +8,9 @@ u32 NewProjectPage(FilePathList PathList)
     BeginDrawing();
         ClearBackground(GREEN);
         DrawText("Project Name:", ScreenWidth/2 - ProjectNameW,100,FontSize,BLACK);
+        {
+            if(GuiButton({PANELWIDTH*0.6,10,PANELWIDTH*0.19,30},"BACK")) return FRONT_PAGE;
+        }
         DrawFPS(10,10);
     EndDrawing();
 

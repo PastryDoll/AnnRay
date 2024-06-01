@@ -34,6 +34,7 @@
 #include "annray_math.h"
 
 global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAGE};
+global u8 CurrentCursorSprite = 0;
 
 #include "annray_fileio.cpp"
 #include "rlib_UIcommons.cpp"

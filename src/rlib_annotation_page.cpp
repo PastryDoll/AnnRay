@@ -20,7 +20,6 @@ annotation_display AnnotationDisplay = {};
 bool first_frame = true;
 bool ReloadImage = false;
 u32 CurrentImageId = 0;
-static u8 CurrentCursorSprite = 0;
 
 u32 CollisionState = NoHit;
 bool isGrabbed = false;
@@ -468,6 +467,10 @@ u32 DrawPanel(u32 TotalLabels)
 
     GuiToggleGroup(LabelGroupRec,TextJoin(LabelsJoinedText,TotalLabels,"\n"),&AnnotationState.CurrentLabel);
 
+    // 
+    // Write new labels
+    // 
+
     // Add + to the end 
     //@TODO Factor this to a function
     {
@@ -476,6 +479,9 @@ u32 DrawPanel(u32 TotalLabels)
         internal bool clicked = false;
         internal bool writing = false;
         internal bool Active = true;
+        internal char newLabelName[MAX_LENGTH] = "\0";      // NOTE: One extra space required for null terminator char '\0'
+        internal u32 letterCount = 0;
+        
         if (!writing)
         {
             if(GuiButton(NewLabelRec,"+")) 
@@ -487,16 +493,19 @@ u32 DrawPanel(u32 TotalLabels)
         if (clicked)
         {
             writing = true;
-            TextInputBox(NewLabelRec, &Active, &CurrentCursorSprite);
+            TextInputBox(NewLabelRec, &Active, &CurrentCursorSprite, newLabelName, &letterCount, MAX_LENGTH);
+            DrawText(newLabelName, (u32)NewLabelRec.x + 5, (u32)NewLabelRec.y + 5, 20, BLACK);
+
+
         }
         if (IsKeyPressed(KEY_ENTER) && (writing))
         {
             Active = false;
             writing = false;
             clicked = false;
-            printf("Name: %s\n", name);
-            strcpy(Labels[TotalLabels], name);
-            strcpy(name,"");
+            printf("New Label: %s\n", newLabelName);
+            strcpy(Labels[TotalLabels], newLabelName);
+            strcpy(newLabelName,"");
             letterCount = 0;
             TotalLabels += 1;
             // SaveAnnToFile(AnnPath,&Bboxes);

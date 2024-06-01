@@ -3,7 +3,7 @@ u32 FrontPage(Music *FrontPageMuic)
 {
     s32 ScreenHeight = GetScreenHeight();
     s32 ScreenWidth = GetScreenWidth();
-    internal bool MusicOff = false;
+    internal bool MusicOff = true;
     if (!MusicOff) UpdateMusicStream(*FrontPageMuic);
     f32 Verticalgap = ScreenHeight*0.01f;
     f32 ButtonHeight = ScreenHeight*0.12f;
