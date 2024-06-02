@@ -44,6 +44,16 @@ global u8 CurrentCursorSprite = 0;
 #include "rlib_inventory_page.cpp"
 #include "rlib_export_page.cpp"
 
+// bool CreateEnv()
+// {
+//     LoadDire
+// };
+
+bool IsEnvCreated()
+{
+    return DirectoryExists("../project/");
+};
+
 int main()
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
@@ -56,6 +66,9 @@ int main()
     FilePathList PathList = LoadDirectoryFiles(FolderPath);
     Music FrontPageMusic = LoadMusicStream("../assets/awesomeness.wav");
     PlayMusicStream(FrontPageMusic);
+
+    bool IsEnv = IsEnvCreated();
+    printf("Is env created ? %u\n", IsEnv);
 
     bool running = true;
     while(running)
