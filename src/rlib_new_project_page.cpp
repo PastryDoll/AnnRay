@@ -1,10 +1,15 @@
-global char ProjectName[MAX_LENGTH] = "\0";      // NOTE: One extra space required for null terminator char '\0'
-global bool IsProjectNameSet = false;
+u32 CreateProjectFolder(char *ProjectName)
+{   
+    char *PathStrs[] = {(char *)"..",(char *)"projects",ProjectName};
+    const char *FullPath = TextJoin((const char **)PathStrs,3,"/");
+    printf("Full path %s:\n", FullPath);
 
-internal 
-u32 CreateProjectFolder()
-{
+    if (!DirectoryExists(FullPath))
+    {
+        CreateDirectory(FullPath);
+    }; 
 
+    return 0;
 };
 
 internal
@@ -26,7 +31,8 @@ u32 NewProjectPage(FilePathList PathList)
         {
             Active = false;
             IsProjectNameSet = true;
-            CreateProjectFolder();
+            printf("Pirject name: %s\n", ProjectName);
+            CreateProjectFolder(ProjectName);
         } 
         if(GuiButton({PANELWIDTH*0.6,10,PANELWIDTH*0.19,30},"BACK")) return FRONT_PAGE;
         DrawFPS(10,10);

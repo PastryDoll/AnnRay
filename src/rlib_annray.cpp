@@ -18,7 +18,7 @@
 
 #define TEST_FOLDER_PNG "../images_samplepng/"
 #define TEST_FOLDER_JPG "../test_material/images_sample"
-#define PROJECT_FOLDER "../project"
+#define PROJECT_FOLDER "../projects"
 #define TEST_PIC "DJI_0325.JPG"
 
 #define SCREEN_WIDTH 1200
@@ -35,6 +35,8 @@
 
 global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAGE};
 global u8 CurrentCursorSprite = 0;
+global char ProjectName[MAX_LENGTH] = "\0";      // NOTE: One extra space required for null terminator char '\0'
+global bool IsProjectNameSet = false;
 
 #include "annray_fileio.cpp"
 #include "rlib_UIcommons.cpp"
@@ -44,14 +46,15 @@ global u8 CurrentCursorSprite = 0;
 #include "rlib_inventory_page.cpp"
 #include "rlib_export_page.cpp"
 
-// bool CreateEnv()
-// {
-//     LoadDire
-// };
+bool CreateEnv()
+{
+    CreateDirectory("../projects/");
+    return 1;
+};
 
 bool IsEnvCreated()
 {
-    return DirectoryExists("../project/");
+    return DirectoryExists("../projects/");
 };
 
 int main()
@@ -68,7 +71,7 @@ int main()
     PlayMusicStream(FrontPageMusic);
 
     bool IsEnv = IsEnvCreated();
-    printf("Is env created ? %u\n", IsEnv);
+    if (IsEnv == false) CreateEnv();
 
     bool running = true;
     while(running)

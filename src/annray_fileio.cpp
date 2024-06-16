@@ -1,7 +1,7 @@
 internal const
 void SaveLabelsToFile(char Labels[MAX_LENGTH][MAX_STRINGS], u32 TotalLabels)
 {
-    FILE *file = fopen("../project/label.lann", "w");
+    FILE *file = fopen("../projects/label.lann", "w");
     if (file == NULL) {
         printf("Error opening label file!\n");
         assert(0);
@@ -16,7 +16,7 @@ void SaveLabelsToFile(char Labels[MAX_LENGTH][MAX_STRINGS], u32 TotalLabels)
 }
 
 u32 ReadLabelsFromFile(const char *filename, char Labels[MAX_LENGTH][MAX_STRINGS]) {
-    FILE *file = fopen("../project/label.lann", "r");
+    FILE *file = fopen("../projects/label.lann", "r");
     if (file == NULL) {
         printf("Error opening file!\n");
         assert(0);
@@ -39,7 +39,7 @@ u32 ReadLabelsFromFile(const char *filename, char Labels[MAX_LENGTH][MAX_STRINGS
 internal const
 u32 SaveAnnToFile(const char *FileName, const bboxes *Bboxes)
 {
-    u32 TotalLabels = ReadLabelsFromFile("../project/label.lann",NULL);
+    u32 TotalLabels = ReadLabelsFromFile("../projects/label.lann",NULL);
     FILE *file = fopen(FileName, "wb");
     if (file == NULL) {
         printf("Error Saving to file %s\n",FileName);

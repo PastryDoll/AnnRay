@@ -11,6 +11,9 @@ u32 FrontPage(Music *FrontPageMuic)
     f32 ButtonsX = ScreenWidth*1.0f/3.0f;
     BeginDrawing();
         ClearBackground(BLUE);
+        char *CurrentProjectTextStrs[] = {(char*)"Current project: ", ProjectName};
+        const char *CurrentProjectText =  TextJoin((const char**)CurrentProjectTextStrs, 2, "");
+        DrawText(CurrentProjectText, ButtonsX, ScreenHeight*0.05, 20,BLACK);
         if(GuiButton((Rectangle){ ButtonsX, ScreenHeight*0.1f + 0*ButtonEffectiveHeight, ButtonsX, ButtonHeight},"New Project")) return NEW_PROJECT_PAGE;
         if(GuiButton((Rectangle){ ButtonsX, ScreenHeight*0.1f + 1*ButtonEffectiveHeight, ButtonsX, ButtonHeight},"Annotation Page")) return ANNOTATION_PAGE;
         if(GuiButton((Rectangle){ ButtonsX, ScreenHeight*0.1f + 2*ButtonEffectiveHeight, ButtonsX, ButtonHeight},"Inventory Page")) return INVENTORY_PAGE;

@@ -25,6 +25,29 @@ typedef double f64;
 
 #define MAX_TOTAL_BOXES 16
 
+#ifdef _WIN32
+#include <direct.h>
+#define MKDIR(dir) _mkdir(dir)
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#define MKDIR(dir) mkdir(dir, 0755)
+#endif
+
+u32 CreateDirectory(const char *dirName) {
+    if (dirName == NULL) {
+        fprintf(stderr, "Directory name is NULL.\n");
+        return 0;
+    }
+    if (MKDIR(dirName) == 0) {
+        printf("Directory '%s' created successfully.\n", dirName);
+        return 1;
+    } else {
+        printf("Error creating directory '%s'.\n", dirName);
+        return 0;
+    }
+}
+
 internal inline
 bool IsGestureTapped(s32 Gesture)
 {

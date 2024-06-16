@@ -29,7 +29,6 @@ void TextInputBox(Rectangle rectangle, bool *Active, u8 *CurrentCursorSprite, ch
     }
     DrawRectangleRec(rectangle, BLUE);
     // GuiDrawText(name, GetTextBounds(TOGGLE, rectangle), GuiGetStyle(TOGGLE, TEXT_ALIGNMENT), GetColor(GuiGetStyle(TOGGLE, TEXT + STATE_NORMAL*3)));
-    DrawText(name, (u32)rectangle.x + 5, (u32)rectangle.y + 5, 20, BLACK);
     if ((*letterCount < maxLenght) && (*Active))
     {
 
