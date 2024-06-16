@@ -13,7 +13,7 @@ u32 CreateProjectFolder(char *ProjectName)
 };
 
 internal
-u32 NewProjectPage(FilePathList PathList)
+u32 NewProjectPage()
 {
     u32 ScreenWidth = GetScreenWidth();
     u32 FontSize = (u32)ScreenWidth*0.02;
@@ -31,7 +31,7 @@ u32 NewProjectPage(FilePathList PathList)
         {
             Active = false;
             IsProjectNameSet = true;
-            printf("Pirject name: %s\n", ProjectName);
+            printf("Project name: %s\n", ProjectName);
             CreateProjectFolder(ProjectName);
         } 
         if(GuiButton({PANELWIDTH*0.6,10,PANELWIDTH*0.19,30},"BACK")) return FRONT_PAGE;

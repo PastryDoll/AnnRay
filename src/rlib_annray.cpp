@@ -42,6 +42,7 @@ global bool IsProjectNameSet = false;
 #include "rlib_UIcommons.cpp"
 #include "rlib_front_page.cpp"
 #include "rlib_new_project_page.cpp"
+#include "rlib_load_project_page.cpp"
 #include "rlib_annotation_page.cpp"
 #include "rlib_inventory_page.cpp"
 #include "rlib_export_page.cpp"
@@ -67,6 +68,7 @@ int main()
 
     const char *FolderPath = TEST_FOLDER_JPG;
     FilePathList PathList = LoadDirectoryFiles(FolderPath);
+    
     Music FrontPageMusic = LoadMusicStream("../assets/awesomeness.wav");
     PlayMusicStream(FrontPageMusic);
 
@@ -87,8 +89,14 @@ int main()
         };
         case NEW_PROJECT_PAGE:
         {
-             GlobalState.CurrentPage = NewProjectPage(PathList);
+             GlobalState.CurrentPage = NewProjectPage();
              GlobalState.PreviousPage = NEW_PROJECT_PAGE;
+        break;
+        };
+        case LOAD_PROJECT_PAGE:
+        {
+             GlobalState.CurrentPage = LoadProjectPage();
+             GlobalState.PreviousPage = LOAD_PROJECT_PAGE;
         break;
         };
         case ANNOTATION_PAGE:
