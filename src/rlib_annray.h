@@ -48,6 +48,22 @@ u32 CreateDirectory(const char *dirName) {
     }
 }
 
+bool CreateEnv()
+{
+    CreateDirectory("../projects/");
+    return 1;
+};
+
+bool IsEnvCreated()
+{
+    return DirectoryExists("../projects/");
+};
+
+bool IsProjectDefined()
+{
+    return false;
+};
+
 internal inline
 bool IsGestureTapped(s32 Gesture)
 {
@@ -100,6 +116,7 @@ struct global_state
 {
     u32 CurrentPage;
     u32 PreviousPage;
+    bool IsProjectSelected;
 };
 
 struct bbox

@@ -33,10 +33,9 @@
 #include "rlib_annray.h"
 #include "annray_math.h"
 
-global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAGE};
+global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAGE, .IsProjectSelected = false};
 global u8 CurrentCursorSprite = 0;
 global char ProjectName[MAX_LENGTH] = "\0";      // NOTE: One extra space required for null terminator char '\0'
-global bool IsProjectNameSet = false;
 
 #include "annray_fileio.cpp"
 #include "rlib_UIcommons.cpp"
@@ -46,17 +45,6 @@ global bool IsProjectNameSet = false;
 #include "rlib_annotation_page.cpp"
 #include "rlib_inventory_page.cpp"
 #include "rlib_export_page.cpp"
-
-bool CreateEnv()
-{
-    CreateDirectory("../projects/");
-    return 1;
-};
-
-bool IsEnvCreated()
-{
-    return DirectoryExists("../projects/");
-};
 
 int main()
 {
@@ -81,6 +69,9 @@ int main()
         running = !WindowShouldClose();
         switch (GlobalState.CurrentPage)
         {
+
+        // The front page dispatch to other pages and also render the page selection page
+
         case FRONT_PAGE:
         {
             GlobalState.CurrentPage = FrontPage(&FrontPageMusic);
@@ -101,8 +92,8 @@ int main()
         };
         case ANNOTATION_PAGE:
         {
-             GlobalState.CurrentPage = AnnotationPage(PathList);
-             GlobalState.PreviousPage = ANNOTATION_PAGE;
+            GlobalState.CurrentPage = AnnotationPage(PathList);
+            GlobalState.PreviousPage = ANNOTATION_PAGE;
         break;
         };
         case INVENTORY_PAGE:

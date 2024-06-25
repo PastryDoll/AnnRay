@@ -91,7 +91,6 @@ u32 NewProjectPage()
         DrawText(ProjectName, (u32)ProjectNameRec.x + 5, (u32)ProjectNameRec.y + 5, 20, BLACK);
         if (IsKeyPressed(KEY_ENTER) && ProjectNameActive)
         {
-            IsProjectNameSet = true;  
             ProjectNameActive = false;
             TagsActive = true;
         }
