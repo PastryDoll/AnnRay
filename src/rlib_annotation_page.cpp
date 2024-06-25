@@ -13,7 +13,7 @@ const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPL
 // Per Image
 //
 bboxes Bboxes = {};
-char* AnnPath = NULL;
+char* CurrentAnnFile = NULL;
 
 annotation_page_state AnnotationState = {};
 annotation_display AnnotationDisplay = {};
@@ -413,7 +413,7 @@ internal
 void ResetImage()
 {   
     Bboxes = {0};
-    SaveAnnToFile(AnnPath,&Bboxes);
+    SaveAnnToFile(CurrentAnnFile,&Bboxes);
     return;
 };
 
@@ -602,7 +602,7 @@ u32 DrawPanel(u32 TotalLabels)
 }
 
 internal
-u32 InitializeAnnotationDisplayAndState(const char* AnnPath, annotation_page_state *State)
+u32 InitializeAnnotationDisplayAndState(char* CurrentAnnFile, annotation_page_state *State)
 {
 // 
 // Responsible to initialize new AnnotationDisplay
@@ -617,8 +617,8 @@ u32 InitializeAnnotationDisplayAndState(const char* AnnPath, annotation_page_sta
     Vector2 InitialOffSet = {(RenderWidth - AnnotationDisplay.ImageTexture .width*InitialZoom)*0.5f,(RenderHeight - AnnotationDisplay.ImageTexture.height*InitialZoom)*0.5f};
     AnnotationDisplay.camera = {InitialOffSet,{0,0},0,InitialZoom};
     
-    u32 TotalLabels = ReadLabelsFromFile(AnnPath,Labels);
-    TotalLabels = ReadAnnFromFile(AnnPath,&Bboxes);
+    u32 TotalLabels = ReadLabelsFromFile(Labels);
+    TotalLabels = ReadAnnFromFile(CurrentAnnFile,&Bboxes);
     AnnotationState.CurrentBbox = Bboxes.TotalBoxes;
     return TotalLabels;
 }
@@ -669,14 +669,14 @@ u32 AnnotationPage(FilePathList PathList)
 
         s32 count = 0;
         const char *ImageName = TextSplit(ImagePath,'/',&count)[count-1];
-        const char *AnnPathTmp = TextFormat("%s/%s.ann",PROJECT_FOLDER, ImageName);
-        if (AnnPath) free(AnnPath);
-        AnnPath = (char*)malloc(strlen(AnnPathTmp) + 1);
-        strcpy(AnnPath,AnnPathTmp);
+        const char *AnnFileTmp = TextFormat("%s.ann", ImageName);
+        if (CurrentAnnFile) free(CurrentAnnFile);
+        CurrentAnnFile = (char*)malloc(strlen(AnnFileTmp) + 1);
+        strcpy(CurrentAnnFile,AnnFileTmp);
 
         first_frame = false;
         ReloadImage = false;
-        TotalLabels = InitializeAnnotationDisplayAndState(AnnPath,&AnnotationState);
+        TotalLabels = InitializeAnnotationDisplayAndState(CurrentAnnFile,&AnnotationState);
     }
 // 
 // Reset texture when resizing
@@ -686,7 +686,7 @@ u32 AnnotationPage(FilePathList PathList)
         UnloadRenderTexture(AnnotationDisplay.DisplayTexture);
         AnnotationDisplay.DisplayTexture = LoadRenderTexture(FullImageDisplayWidth,FullImageDisplayHeight);
         SetTextureFilter(AnnotationDisplay.DisplayTexture.texture, TEXTURE_FILTER_BILINEAR);
-        TotalLabels = InitializeAnnotationDisplayAndState(AnnPath,&AnnotationState);
+        TotalLabels = InitializeAnnotationDisplayAndState(CurrentAnnFile,&AnnotationState);
     }
     assert(TotalLabels > 0);
 // 
@@ -745,7 +745,7 @@ u32 AnnotationPage(FilePathList PathList)
 
     EndDrawing();
 
-    TotalLabels = SaveAnnToFile(AnnPath,&Bboxes); //@SpeedUp Dont call this every
+    TotalLabels = SaveAnnToFile(CurrentAnnFile,&Bboxes); //@SpeedUp Dont call this every
     SaveLabelsToFile(Labels, TotalLabels);
 
     return ANNOTATION_PAGE;

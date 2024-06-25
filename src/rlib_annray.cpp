@@ -18,14 +18,13 @@
 
 #define TEST_FOLDER_PNG "../images_samplepng/"
 #define TEST_FOLDER_JPG "../test_material/images_sample"
-#define PROJECT_FOLDER "../projects"
 #define TEST_PIC "DJI_0325.JPG"
 
 #define SCREEN_WIDTH 1200
 #define SCREEN_HEIGHT 720
 
-#define PANELWIDTH (float)280
-#define IMAGEDISPLAYSIDEGAP (float)32
+#define PANELWIDTH (f32)280
+#define IMAGEDISPLAYSIDEGAP (f32)32
 
 #define MAX_STRINGS 16
 #define MAX_LENGTH 16
@@ -33,9 +32,8 @@
 #include "rlib_annray.h"
 #include "annray_math.h"
 
-global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAGE, .IsProjectSelected = false};
+global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAGE, .IsProjectSelected = false, .ProjectName = "NoProjectName"};
 global u8 CurrentCursorSprite = 0;
-global char ProjectName[MAX_LENGTH] = "\0";      // NOTE: One extra space required for null terminator char '\0'
 
 #include "annray_fileio.cpp"
 #include "rlib_UIcommons.cpp"

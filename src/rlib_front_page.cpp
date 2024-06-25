@@ -11,9 +11,10 @@ u32 FrontPage(Music *FrontPageMuic)
     f32 ButtonsX = ScreenWidth*1.0f/3.0f;
     u32 ReturnPage = FRONT_PAGE;
     internal bool DrawError = false;
+    if (GlobalState.PreviousPage != FRONT_PAGE) DrawError = false;
     BeginDrawing();
         ClearBackground(BLUE);
-        char *CurrentProjectTextStrs[] = {(char*)"Current project: ", ProjectName};
+        char *CurrentProjectTextStrs[] = {(char*)"Current project: ", GlobalState.ProjectName};
         const char *CurrentProjectText =  TextJoin((const char**)CurrentProjectTextStrs, 2, "");
         DrawText(CurrentProjectText, ButtonsX, ScreenHeight*0.05, 20,BLACK);
         if(GuiButton((Rectangle){ ButtonsX, ScreenHeight*0.1f + 0*ButtonEffectiveHeight, ButtonsX, ButtonHeight},"New Project")) ReturnPage = NEW_PROJECT_PAGE;

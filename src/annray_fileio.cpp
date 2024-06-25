@@ -1,7 +1,16 @@
 internal const
 void SaveLabelsToFile(char Labels[MAX_LENGTH][MAX_STRINGS], u32 TotalLabels)
 {
-    FILE *file = fopen("../projects/label.lann", "w");
+    char *PathStrs[5];
+    const char *FullPath;
+    PathStrs[0] = (char *)"..";
+    PathStrs[1] = (char *)"projects";
+    PathStrs[2] = GlobalState.ProjectName;
+    PathStrs[3] = (char *)"labels";
+    PathStrs[4] = (char *)"label.lann";
+    FullPath = TextJoin((const char **)PathStrs,5,"/");
+
+    FILE *file = fopen(FullPath, "w");
     if (file == NULL) {
         printf("Error opening label file!\n");
         assert(0);
@@ -15,8 +24,17 @@ void SaveLabelsToFile(char Labels[MAX_LENGTH][MAX_STRINGS], u32 TotalLabels)
     fclose(file);
 }
 
-u32 ReadLabelsFromFile(const char *filename, char Labels[MAX_LENGTH][MAX_STRINGS]) {
-    FILE *file = fopen("../projects/label.lann", "r");
+u32 ReadLabelsFromFile(char Labels[MAX_LENGTH][MAX_STRINGS]) 
+{
+    char *PathStrs[5];
+    const char *FullPath;
+    PathStrs[0] = (char *)"..";
+    PathStrs[1] = (char *)"projects";
+    PathStrs[2] = GlobalState.ProjectName;
+    PathStrs[3] = (char *)"labels";
+    PathStrs[4] = (char *)"label.lann";
+    FullPath = TextJoin((const char **)PathStrs,5,"/");
+    FILE *file = fopen(FullPath, "r");
     if (file == NULL) {
         printf("Error opening file!\n");
         assert(0);
@@ -37,12 +55,21 @@ u32 ReadLabelsFromFile(const char *filename, char Labels[MAX_LENGTH][MAX_STRINGS
 }
 
 internal const
-u32 SaveAnnToFile(const char *FileName, const bboxes *Bboxes)
+u32 SaveAnnToFile(char *FileName, const bboxes *Bboxes)
 {
-    u32 TotalLabels = ReadLabelsFromFile("../projects/label.lann",NULL);
-    FILE *file = fopen(FileName, "wb");
+    u32 TotalLabels = ReadLabelsFromFile(NULL); //This modifies the FullPath *
+
+    char *PathStrs[5];
+    const char *FullPath;
+    PathStrs[0] = (char *)"..";
+    PathStrs[1] = (char *)"projects";
+    PathStrs[2] = GlobalState.ProjectName;
+    PathStrs[3] = (char *)"annotations";
+    PathStrs[4] = FileName;
+    FullPath = TextJoin((const char **)PathStrs,5,"/");
+    FILE *file = fopen(FullPath, "wb");
     if (file == NULL) {
-        printf("Error Saving to file %s\n",FileName);
+        printf("Error Saving to file %s\n",FullPath);
         fclose(file);
         return 0;
     }
@@ -55,17 +82,25 @@ u32 SaveAnnToFile(const char *FileName, const bboxes *Bboxes)
 }
 
 internal 
-u32 ReadAnnFromFile(const char *FileName, bboxes *NewBboxes)
+u32 ReadAnnFromFile(char *FileName, bboxes *NewBboxes)
 {
+    char *PathStrs[5];
+    const char *FullPath;
+    PathStrs[0] = (char *)"..";
+    PathStrs[1] = (char *)"projects";
+    PathStrs[2] = GlobalState.ProjectName;
+    PathStrs[3] = (char *)"annotations";
+    PathStrs[4] = FileName;
+    FullPath = TextJoin((const char **)PathStrs,5,"/");
 
     // u32 TotalLabels = ReadLabelsFromFile("../project/label.lann",NULL);
     u32 TotalLabels; 
     memset(NewBboxes,0,sizeof(bboxes));
 
     FILE *file;
-    file = fopen(FileName, "rb");
+    file = fopen(FullPath, "rb");
     if (file == NULL) {
-        printf("Error opening file %s\n",FileName);
+        printf("Error opening file %s\n",FullPath);
         fclose(file);
         return 1;
     }

@@ -117,6 +117,7 @@ struct global_state
     u32 CurrentPage;
     u32 PreviousPage;
     bool IsProjectSelected;
+    char ProjectName[MAX_LENGTH];
 };
 
 struct bbox

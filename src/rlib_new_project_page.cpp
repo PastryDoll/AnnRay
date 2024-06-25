@@ -80,7 +80,7 @@ u32 NewProjectPage()
         ClearBackground(GREEN);
         DrawText("Project Name:", ScreenWidth/2 - ProjectNameW,100,FontSize,BLACK);
         DrawText("Tags:", ScreenWidth/2 - ProjectNameW,100 + 35,FontSize,BLACK);
-        TextInputBox(ProjectNameRec, &ProjectNameActive, &CurrentCursorSprite, ProjectName, &ProjectNameLetterCount, MAX_LENGTH);
+        TextInputBox(ProjectNameRec, &ProjectNameActive, &CurrentCursorSprite, GlobalState.ProjectName, &ProjectNameLetterCount, MAX_LENGTH);
         TextInputBox(TagsRec, &TagsActive, &CurrentCursorSprite, Tags, &TagsLetterCount, MAX_LENGTH);
 
         if (CheckCollisionPointRec(GetMousePosition(), ProjectNameRec) && (IsGestureTapped(CurrentGesture)))
@@ -88,7 +88,7 @@ u32 NewProjectPage()
             ProjectNameActive = true;
         } 
 
-        DrawText(ProjectName, (u32)ProjectNameRec.x + 5, (u32)ProjectNameRec.y + 5, 20, BLACK);
+        DrawText(GlobalState.ProjectName, (u32)ProjectNameRec.x + 5, (u32)ProjectNameRec.y + 5, 20, BLACK);
         if (IsKeyPressed(KEY_ENTER) && ProjectNameActive)
         {
             ProjectNameActive = false;
@@ -102,7 +102,7 @@ u32 NewProjectPage()
         if(GuiButton({PANELWIDTH*0.6,10,PANELWIDTH*0.19,30},"BACK")) return FRONT_PAGE;
         if(GuiButton(DoneButton,"Done!"))
         {
-            CreateProjectFolder(ProjectName);
+            CreateProjectFolder(GlobalState.ProjectName);
             return FRONT_PAGE;
         } 
         DrawFPS(10,10);

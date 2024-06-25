@@ -18,7 +18,8 @@ internal u32 LoadProjectPage(void)
                 const char *DirName = GetFileName(Projects.paths[i]);
                 if(GuiButton((Rectangle){ ButtonsX, ScreenHeight*0.1f + DirCount*ButtonEffectiveHeight, ButtonsX, ButtonHeight},DirName))
                 {
-                    strcpy(ProjectName, DirName);
+                    strcpy(GlobalState.ProjectName, DirName);
+                    GlobalState.IsProjectSelected = true;
                     ReturnPage = FRONT_PAGE;
                 };
                 DirCount++;
