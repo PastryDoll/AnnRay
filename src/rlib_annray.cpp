@@ -61,6 +61,9 @@ int main()
     bool IsEnv = IsEnvCreated();
     if (IsEnv == false) CreateEnv();
 
+    // Get last project
+    TextCopy(GlobalState.ProjectName, LoadFileText("../projects/last_project.txt"));
+
     bool running = true;
     while(running)
     {   

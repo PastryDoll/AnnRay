@@ -102,7 +102,7 @@ u32 ReadAnnFromFile(char *FileName, bboxes *NewBboxes)
     if (file == NULL) {
         printf("Error opening file %s\n",FullPath);
         fclose(file);
-        return 1;
+        return 0;
     }
 
     fread(&NewBboxes->TotalBoxes, sizeof(NewBboxes->TotalBoxes), 1, file);

@@ -49,19 +49,28 @@ u32 CreateDirectory(const char *dirName) {
 }
 
 bool CreateEnv()
-{
+{  
+    printf("Creating env...");
     CreateDirectory("../projects/");
+
+    // 
+    // Retain last project opened initial file
+    // 
+    FILE *file = fopen("../projects/last_project.txt", "w");
+    if (file == NULL) {
+        printf("Error creating initial last project file file!\n");
+        assert(0);
+    }
+    fclose(file);
+
     return 1;
 };
 
 bool IsEnvCreated()
 {
-    return DirectoryExists("../projects/");
-};
-
-bool IsProjectDefined()
-{
-    return false;
+    bool ProjectDirectory = DirectoryExists("../projects/");
+    bool LastProjectFile = FileExists("../projects/last_project.txt");
+    return ProjectDirectory&&LastProjectFile;
 };
 
 internal inline

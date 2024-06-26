@@ -607,15 +607,30 @@ u32 InitializeAnnotationDisplayAndState(char* CurrentAnnFile, annotation_page_st
 // 
 // Responsible to initialize new AnnotationDisplay
 //
-    u32 ScreenWidth = GetScreenWidth();
-    u32 ScreenHeight = GetScreenHeight();
-    
-    f32 RenderWidth = ScreenWidth - PANELWIDTH;
-    f32 RenderHeight = ScreenHeight;
+    {   
+        // 
+        //// Initialize annotation display
+        // 
 
-    f32 InitialZoom = RenderWidth/AnnotationDisplay.ImageTexture .width - 0.005;
-    Vector2 InitialOffSet = {(RenderWidth - AnnotationDisplay.ImageTexture .width*InitialZoom)*0.5f,(RenderHeight - AnnotationDisplay.ImageTexture.height*InitialZoom)*0.5f};
-    AnnotationDisplay.camera = {InitialOffSet,{0,0},0,InitialZoom};
+        u32 ScreenWidth = GetScreenWidth();
+        u32 ScreenHeight = GetScreenHeight();
+        
+        f32 RenderWidth = ScreenWidth - PANELWIDTH;
+        f32 RenderHeight = ScreenHeight;
+
+        f32 InitialZoom = RenderWidth/AnnotationDisplay.ImageTexture .width - 0.005;
+        Vector2 InitialOffSet = {(RenderWidth - AnnotationDisplay.ImageTexture .width*InitialZoom)*0.5f,(RenderHeight - AnnotationDisplay.ImageTexture.height*InitialZoom)*0.5f};
+        AnnotationDisplay.camera = {InitialOffSet,{0,0},0,InitialZoom};
+    }
+
+    {
+        // 
+        //// Save last_project worked
+        // 
+
+        SaveFileText("../projects/last_project.txt", GlobalState.ProjectName);
+
+    }
     
     u32 TotalLabels = ReadLabelsFromFile(Labels);
     TotalLabels = ReadAnnFromFile(CurrentAnnFile,&Bboxes);
