@@ -10,6 +10,8 @@
 #include <sys/stat.h>
 #include <pthread.h>
 #include <errno.h>
+#include <semaphore.h>
+#include <dispatch/dispatch.h>
 
 #include "raylib.h"
 #define RAYGUI_IMPLEMENTATION
@@ -35,6 +37,7 @@
 global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAGE, .IsProjectSelected = false, .ProjectName = "NoProjectName"};
 global u8 CurrentCursorSprite = 0;
 
+#include "annray_async_image.cpp"
 #include "annray_fileio.cpp"
 #include "rlib_UIcommons.cpp"
 #include "rlib_front_page.cpp"
@@ -51,6 +54,16 @@ int main()
     SetWindowMinSize(PANELWIDTH + 50, PANELWIDTH + 50);
     SetTargetFPS(120);
     InitAudioDevice();
+
+    // Start Thread for async loading of image on annotation page
+    pthread_t AnnThreadId;
+    thread_info_image AnnThreadInfo;
+    dispatch_semaphore_t semaphore;
+    semaphore = dispatch_semaphore_create(0);
+    AnnThreadInfo.SemaphoreHandle = semaphore;
+    AnnThreadInfo.AsyncImage.data = nullptr;
+    u32 AnnThreadError = pthread_create(&AnnThreadId, NULL,AsyncImageLoading, &AnnThreadInfo);
+    if (AnnThreadError != 0) printf("Error creating thread for async image loading on annotation page\n");
 
     const char *FolderPath = TEST_FOLDER_JPG;
     FilePathList PathList = LoadDirectoryFiles(FolderPath);
@@ -94,7 +107,7 @@ int main()
         };
         case ANNOTATION_PAGE:
         {
-            GlobalState.CurrentPage = AnnotationPage(PathList);
+            GlobalState.CurrentPage = AnnotationPage(PathList, &AnnThreadInfo);
             GlobalState.PreviousPage = ANNOTATION_PAGE;
         break;
         };

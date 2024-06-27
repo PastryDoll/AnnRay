@@ -8,7 +8,7 @@
 char Labels[MAX_LENGTH][MAX_STRINGS] = {};
 // u32 TotalLabels = {};
 const global Color LabelsColors[10] = {RED,WHITE,GREEN,BLUE,MAGENTA,YELLOW,PURPLE,BROWN,SKYBLUE,LIME}; //@TODO Randomize the colors in a nice way;
-
+global bool IsTextureReady2 = false;
 //
 // Per Image
 //
@@ -325,7 +325,7 @@ void BoxCreation(const Vector2 MousePosition)
 }
 
 internal
-void RenderImageDisplay()
+void DrawRenderImageDisplay()
 {
     f32 RenderWidth = AnnotationDisplay.DisplayTexture.texture.width;
     f32 RenderHeight = AnnotationDisplay.DisplayTexture.texture.height;
@@ -385,7 +385,11 @@ void RenderImageDisplay()
     BeginTextureMode(AnnotationDisplay.DisplayTexture);
         BeginMode2D(AnnotationDisplay.camera);
             ClearBackground(BLACK);  // Clear render texture background color
-            DrawTexture(AnnotationDisplay.ImageTexture,0,0,WHITE);
+            if (IsTextureReady2)
+            {
+                DrawTexture(AnnotationDisplay.ImageTexture,0,0,WHITE);
+            }
+            else DrawText("Loading...", 200, 100, 200, RED);
             //@TODO Maybe we do a fragment shader for rectangle drawing
                 for (u32 BoxId = 0; BoxId < Bboxes.TotalBoxes+1; ++BoxId)
                 {
@@ -639,11 +643,12 @@ u32 InitializeAnnotationDisplayAndState(char* CurrentAnnFile, annotation_page_st
 }
 
 internal
-u32 AnnotationPage(FilePathList PathList)
+u32 AnnotationPage(FilePathList PathList, thread_info_image *AnnThreadInfo)
 {
 //
 // Common Annotation Menu initializations
 // 
+    // printf("Image? %u\n", AnnThreadInfo->DataLoaded);
     u32 ScreenWidth = GetScreenWidth();
     u32 ScreenHeight = GetScreenHeight();
     AnnotationState.CurrentGesture = GetGestureDetected();
@@ -680,8 +685,7 @@ u32 AnnotationPage(FilePathList PathList)
         AnnotationDisplay.DisplayTexture = LoadRenderTexture(FullImageDisplayWidth,FullImageDisplayHeight);
         SetTextureFilter(AnnotationDisplay.DisplayTexture.texture, TEXTURE_FILTER_BILINEAR);
         UnloadTexture(AnnotationDisplay.ImageTexture);
-        AnnotationDisplay.ImageTexture = LoadTexture(ImagePath);
-
+        RequestImageAsync(AnnThreadInfo, ImagePath);
         s32 count = 0;
         const char *ImageName = TextSplit(ImagePath,'/',&count)[count-1];
         const char *AnnFileTmp = TextFormat("%s.ann", ImageName);
@@ -692,6 +696,15 @@ u32 AnnotationPage(FilePathList PathList)
         first_frame = false;
         ReloadImage = false;
         TotalLabels = InitializeAnnotationDisplayAndState(CurrentAnnFile,&AnnotationState);
+    }
+
+    if(AnnThreadInfo->DataLoaded)
+    {
+        AnnotationDisplay.ImageTexture = LoadTextureFromImage(AnnThreadInfo->AsyncImage);
+        // UnloadImage(AnnThreadInfo->AsyncImage);
+        AnnThreadInfo->DataLoaded = false;
+        IsTextureReady2 = true;
+        printf("HELLO2 ?\n");
     }
 // 
 // Reset texture when resizing
@@ -729,7 +742,7 @@ u32 AnnotationPage(FilePathList PathList)
 // 
 // Render Image Display
 // 
-    RenderImageDisplay();
+    DrawRenderImageDisplay();
 // 
 // Draw RenderImageDisplay and Panel
 //  
