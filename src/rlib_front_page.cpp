@@ -11,8 +11,9 @@ u32 FrontPage(Music *FrontPageMuic)
     f32 ButtonsX = ScreenWidth*1.0f/3.0f;
     u32 ReturnPage = FRONT_PAGE;
     internal bool DrawError = false;
-    if (GlobalState.PreviousPage != FRONT_PAGE) DrawError = false;
     BeginDrawing();
+        if(GlobalState.IsProjectSelected) DrawError = false;
+        else DrawError = true;
         ClearBackground(BLUE);
         char *CurrentProjectTextStrs[] = {(char*)"Current project: ", GlobalState.ProjectName};
         const char *CurrentProjectText =  TextJoin((const char**)CurrentProjectTextStrs, 2, "");
@@ -22,12 +23,10 @@ u32 FrontPage(Music *FrontPageMuic)
         if(GuiButton((Rectangle){ ButtonsX, ScreenHeight*0.1f + 2*ButtonEffectiveHeight, ButtonsX, ButtonHeight},"Annotation Page"))
         {
             if(GlobalState.IsProjectSelected) ReturnPage = ANNOTATION_PAGE;
-            else DrawError = true;
         }
         if(GuiButton((Rectangle){ ButtonsX, ScreenHeight*0.1f + 3*ButtonEffectiveHeight, ButtonsX, ButtonHeight},"Inventory Page"))
         {
             if(GlobalState.IsProjectSelected) ReturnPage = INVENTORY_PAGE;
-            else DrawError = true;
         }
         if(GuiButton((Rectangle){ ButtonsX, ScreenHeight*0.1f + 4*ButtonEffectiveHeight, ButtonsX, ButtonHeight},"Export Page")) ReturnPage = EXPORT_PAGE;
         if(GuiButton((Rectangle){ ButtonsX, ScreenHeight*0.1f + 5*ButtonEffectiveHeight, ButtonsX, ButtonHeight},"Exit")) ReturnPage = EXIT;

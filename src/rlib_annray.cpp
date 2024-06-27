@@ -63,6 +63,7 @@ int main()
 
     // Get last project
     TextCopy(GlobalState.ProjectName, LoadFileText("../projects/last_project.txt"));
+    if (!TextIsEqual(GlobalState.ProjectName, "NoProjectName")) GlobalState.IsProjectSelected = true;
 
     bool running = true;
     while(running)
