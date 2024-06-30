@@ -389,7 +389,10 @@ void DrawRenderImageDisplay()
             {
                 DrawTexture(AnnotationDisplay.ImageTexture,0,0,WHITE);
             }
-            else DrawText("Loading...", 200, 100, 200, RED);
+            else
+            {
+                DrawText("Loading...", (AnnotationDisplay.DisplayTexture.texture.width - MeasureText("Loading...", 50))*0.5f,AnnotationDisplay.DisplayTexture.texture.height*0.5f - 50, 50, RED);
+            }
             //@TODO Maybe we do a fragment shader for rectangle drawing
                 for (u32 BoxId = 0; BoxId < Bboxes.TotalBoxes+1; ++BoxId)
                 {
@@ -622,18 +625,13 @@ u32 InitializeAnnotationDisplayAndState(char* CurrentAnnFile, annotation_page_st
         f32 RenderWidth = ScreenWidth - PANELWIDTH;
         f32 RenderHeight = ScreenHeight;
 
-        f32 InitialZoom = RenderWidth/AnnotationDisplay.ImageTexture .width - 0.005;
-        Vector2 InitialOffSet = {(RenderWidth - AnnotationDisplay.ImageTexture .width*InitialZoom)*0.5f,(RenderHeight - AnnotationDisplay.ImageTexture.height*InitialZoom)*0.5f};
-        AnnotationDisplay.camera = {InitialOffSet,{0,0},0,InitialZoom};
-    }
+        // if (DataLoaded)
+        // {
 
-    {
-        // 
-        //// Save last_project worked
-        // 
-
-        SaveFileText("../projects/last_project.txt", GlobalState.ProjectName);
-
+            f32 InitialZoom = RenderWidth/AnnotationDisplay.ImageTexture.width - 0.005;
+            Vector2 InitialOffSet = {(RenderWidth - AnnotationDisplay.ImageTexture.width*InitialZoom)*0.5f,(RenderHeight - AnnotationDisplay.ImageTexture.height*InitialZoom)*0.5f};
+            AnnotationDisplay.camera = {InitialOffSet,{0,0},0,InitialZoom};
+        // }
     }
     
     u32 TotalLabels = ReadLabelsFromFile(Labels);
@@ -674,7 +672,6 @@ u32 AnnotationPage(FilePathList PathList, thread_info_image *AnnThreadInfo)
         ReloadImage = true;
         CurrentImageId -= CurrentImageId > 0 ? 1 : 0;
     }
-    char *ImagePath = PathList.paths[CurrentImageId];
     
 // 
 // First frame initialization and manual reset
@@ -682,30 +679,40 @@ u32 AnnotationPage(FilePathList PathList, thread_info_image *AnnThreadInfo)
     internal u32 TotalLabels = 0;
     if (ReloadImage || first_frame)
     {
+        char *ImagePath = PathList.paths[CurrentImageId];
         AnnotationDisplay.DisplayTexture = LoadRenderTexture(FullImageDisplayWidth,FullImageDisplayHeight);
         SetTextureFilter(AnnotationDisplay.DisplayTexture.texture, TEXTURE_FILTER_BILINEAR);
+        AnnotationDisplay.camera = {{0,0}, {0,0}, 0, 1.0f};
         UnloadTexture(AnnotationDisplay.ImageTexture);
         RequestImageAsync(AnnThreadInfo, ImagePath);
-        s32 count = 0;
-        const char *ImageName = TextSplit(ImagePath,'/',&count)[count-1];
-        const char *AnnFileTmp = TextFormat("%s.ann", ImageName);
-        if (CurrentAnnFile) free(CurrentAnnFile);
-        CurrentAnnFile = (char*)malloc(strlen(AnnFileTmp) + 1);
-        strcpy(CurrentAnnFile,AnnFileTmp);
+        IsTextureReady2 = false;
+
+
+        // Save last_project worked
+        SaveFileText("../projects/last_project.txt", GlobalState.ProjectName);
 
         first_frame = false;
         ReloadImage = false;
-        TotalLabels = InitializeAnnotationDisplayAndState(CurrentAnnFile,&AnnotationState);
     }
 
     if(AnnThreadInfo->DataLoaded)
     {
+        char *ImagePath = PathList.paths[CurrentImageId];
         AnnotationDisplay.ImageTexture = LoadTextureFromImage(AnnThreadInfo->AsyncImage);
-        // UnloadImage(AnnThreadInfo->AsyncImage);
+        UnloadImage(AnnThreadInfo->AsyncImage);
         AnnThreadInfo->DataLoaded = false;
         IsTextureReady2 = true;
-        printf("HELLO2 ?\n");
+        {
+            s32 count = 0;
+            const char *ImageName = TextSplit(ImagePath,'/',&count)[count-1];
+            const char *AnnFileTmp = TextFormat("%s.ann", ImageName);
+            if (CurrentAnnFile) free(CurrentAnnFile);
+            CurrentAnnFile = (char*)malloc(strlen(AnnFileTmp) + 1);
+            strcpy(CurrentAnnFile,AnnFileTmp);
+            TotalLabels = InitializeAnnotationDisplayAndState(CurrentAnnFile,&AnnotationState);
+        }
     }
+
 // 
 // Reset texture when resizing
 // 
@@ -716,7 +723,6 @@ u32 AnnotationPage(FilePathList PathList, thread_info_image *AnnThreadInfo)
         SetTextureFilter(AnnotationDisplay.DisplayTexture.texture, TEXTURE_FILTER_BILINEAR);
         TotalLabels = InitializeAnnotationDisplayAndState(CurrentAnnFile,&AnnotationState);
     }
-    assert(TotalLabels > 0);
 // 
 // Getting global DisplayMode
 // 
@@ -773,8 +779,14 @@ u32 AnnotationPage(FilePathList PathList, thread_info_image *AnnThreadInfo)
 
     EndDrawing();
 
-    TotalLabels = SaveAnnToFile(CurrentAnnFile,&Bboxes); //@SpeedUp Dont call this every
-    SaveLabelsToFile(Labels, TotalLabels);
+
+    if (CurrentAnnFile)
+    {
+        TotalLabels = SaveAnnToFile(CurrentAnnFile,&Bboxes); //@SpeedUp Dont call this every
+        SaveLabelsToFile(Labels, TotalLabels);
+        printf("HELLO2 ?\n");
+        assert(TotalLabels > 0);
+    }
 
     return ANNOTATION_PAGE;
 }
