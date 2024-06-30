@@ -20,6 +20,7 @@ annotation_display AnnotationDisplay = {};
 bool first_frame = true;
 bool ReloadImage = false;
 u32 CurrentImageId = 0;
+u32 TotalImages = 0;
 
 u32 CollisionState = NoHit;
 bool isGrabbed = false;
@@ -356,21 +357,24 @@ void DrawRenderImageDisplay()
         if (AnnotationDisplay.camera.zoom < zoomMin) AnnotationDisplay.camera.zoom = zoomMin;
     }
 
-    switch (AnnotationState.DisplayMode)
+    if (IsTextureReady2)
     {
-        case DispMode_creation:
+        switch (AnnotationState.DisplayMode)
         {
-            BoxCreation(mouseWorldPos);
-        break;
-        }
-        case DispMode_manipulation:
-        {
-            BoxManipulation(mouseWorldPos);
-        break;
-        }
-        default:
-        {
-        break;
+            case DispMode_creation:
+            {
+                BoxCreation(mouseWorldPos);
+            break;
+            }
+            case DispMode_manipulation:
+            {
+                BoxManipulation(mouseWorldPos);
+            break;
+            }
+            default:
+            {
+            break;
+            }
         }
     }
     AnnotationState.PrevGesture = AnnotationState.CurrentGesture; // This is used on BoxCreation & BoxManipulation
@@ -385,14 +389,10 @@ void DrawRenderImageDisplay()
     BeginTextureMode(AnnotationDisplay.DisplayTexture);
         BeginMode2D(AnnotationDisplay.camera);
             ClearBackground(BLACK);  // Clear render texture background color
+            DrawText("Loading...", (AnnotationDisplay.DisplayTexture.texture.width - MeasureText("Loading...", 50))*0.5f,AnnotationDisplay.DisplayTexture.texture.height*0.5f - 50, 50, RED);
             if (IsTextureReady2)
             {
                 DrawTexture(AnnotationDisplay.ImageTexture,0,0,WHITE);
-            }
-            else
-            {
-                DrawText("Loading...", (AnnotationDisplay.DisplayTexture.texture.width - MeasureText("Loading...", 50))*0.5f,AnnotationDisplay.DisplayTexture.texture.height*0.5f - 50, 50, RED);
-            }
             //@TODO Maybe we do a fragment shader for rectangle drawing
                 for (u32 BoxId = 0; BoxId < Bboxes.TotalBoxes+1; ++BoxId)
                 {
@@ -411,6 +411,7 @@ void DrawRenderImageDisplay()
                     // DrawRectangle(x + w - 3,y + h - 3,6,6,RAYWHITE);
                     // DrawRectangle(x - 1,y + h - 3,6,6,RAYWHITE);
                 }
+            }
         EndMode2D();
         DrawSegmentedLines((segmented_lines){MousePositionRelative.x,MousePositionRelative.y,RenderWidth,RenderHeight,LabelsColors[AnnotationState.CurrentLabel]});
     EndTextureMode();
@@ -425,7 +426,7 @@ void ResetImage()
 };
 
 internal
-u32 DrawPanel(u32 TotalLabels)
+u32 DrawLeftPanel(u32 TotalLabels)
 {
     Vector2 MousePosition = GetMousePosition();
     u32 ScreenHeight = GetScreenHeight();
@@ -590,6 +591,14 @@ u32 DrawPanel(u32 TotalLabels)
             if (toggle) AnnotationState.DisplayMode = i;
         }
     }
+// 
+//// Draw Current Image/ Total images display
+// 
+    {
+        const char *Text = TextFormat("%u/%u", CurrentImageId+1, TotalImages);
+        DrawText(Text,(PANELWIDTH - MeasureText(Text,30))*0.5f, ScreenHeight - 32,30, RED);
+    }
+
 
     // Reset
     {
@@ -625,7 +634,7 @@ u32 InitializeAnnotationDisplayAndState(char* CurrentAnnFile, annotation_page_st
         f32 RenderWidth = ScreenWidth - PANELWIDTH;
         f32 RenderHeight = ScreenHeight;
 
-        // if (DataLoaded)
+        // if (ImageReady)
         // {
 
             f32 InitialZoom = RenderWidth/AnnotationDisplay.ImageTexture.width - 0.005;
@@ -646,7 +655,7 @@ u32 AnnotationPage(FilePathList PathList, thread_info_image *AnnThreadInfo)
 //
 // Common Annotation Menu initializations
 // 
-    // printf("Image? %u\n", AnnThreadInfo->DataLoaded);
+    // printf("Image? %u\n", AnnThreadInfo->ImageReady);
     u32 ScreenWidth = GetScreenWidth();
     u32 ScreenHeight = GetScreenHeight();
     AnnotationState.CurrentGesture = GetGestureDetected();
@@ -657,17 +666,17 @@ u32 AnnotationPage(FilePathList PathList, thread_info_image *AnnThreadInfo)
 // 
 // Handle Input Events 
 //  
-    if (IsKeyPressed(KEY_R))
+    if (IsKeyPressed(KEY_R) && IsTextureReady2)
     {
         ReloadImage = true;
         ResetImage();
     }
-    else if (IsKeyPressed(KEY_RIGHT))
+    else if (IsKeyPressed(KEY_RIGHT) && IsTextureReady2)
     {
         ReloadImage = true;
         CurrentImageId += CurrentImageId < PathList.count - 1 ? 1 : 0;
     }
-    else if (IsKeyPressed(KEY_LEFT))
+    else if (IsKeyPressed(KEY_LEFT) && IsTextureReady2)
     {
         ReloadImage = true;
         CurrentImageId -= CurrentImageId > 0 ? 1 : 0;
@@ -679,6 +688,7 @@ u32 AnnotationPage(FilePathList PathList, thread_info_image *AnnThreadInfo)
     internal u32 TotalLabels = 0;
     if (ReloadImage || first_frame)
     {
+        TotalImages = PathList.count;
         char *ImagePath = PathList.paths[CurrentImageId];
         AnnotationDisplay.DisplayTexture = LoadRenderTexture(FullImageDisplayWidth,FullImageDisplayHeight);
         SetTextureFilter(AnnotationDisplay.DisplayTexture.texture, TEXTURE_FILTER_BILINEAR);
@@ -695,12 +705,12 @@ u32 AnnotationPage(FilePathList PathList, thread_info_image *AnnThreadInfo)
         ReloadImage = false;
     }
 
-    if(AnnThreadInfo->DataLoaded)
+    if(AnnThreadInfo->ImageReady)
     {
         char *ImagePath = PathList.paths[CurrentImageId];
         AnnotationDisplay.ImageTexture = LoadTextureFromImage(AnnThreadInfo->AsyncImage);
         UnloadImage(AnnThreadInfo->AsyncImage);
-        AnnThreadInfo->DataLoaded = false;
+        AnnThreadInfo->ImageReady = false;
         IsTextureReady2 = true;
         {
             s32 count = 0;
@@ -756,7 +766,7 @@ u32 AnnotationPage(FilePathList PathList, thread_info_image *AnnThreadInfo)
         ClearBackground(PINK);
         DrawTexturePro(AnnotationDisplay.DisplayTexture.texture, (Rectangle){ 0.0f, 0.0f, (float)AnnotationDisplay.DisplayTexture.texture.width, (float)-AnnotationDisplay.DisplayTexture.texture.height},
                 (Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}, (Vector2){ 0, 0 }, 0.0f, WHITE);
-        TotalLabels = DrawPanel(TotalLabels); // Panel After RenderImageDisplay otherwise it breaks CursorSprite
+        TotalLabels = DrawLeftPanel(TotalLabels); // Panel After RenderImageDisplay otherwise it breaks CursorSprite
 
         // Back to Front Page
 

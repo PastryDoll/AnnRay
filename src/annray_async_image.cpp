@@ -3,7 +3,7 @@
 struct thread_info_image
 {
     char* FileName;
-    bool DataLoaded = false;
+    bool ImageReady = false;
     dispatch_semaphore_t SemaphoreHandle;
     Image AsyncImage;
 };
@@ -22,7 +22,7 @@ internal void *AsyncImageLoading(void *arg)
         dispatch_semaphore_wait(ThreadInfo->SemaphoreHandle, DISPATCH_TIME_FOREVER); //decrements semaphore
         CompletePastBeforeFuture
         ThreadInfo->AsyncImage = LoadImage(ThreadInfo->FileName);
-        ThreadInfo->DataLoaded = true;
+        ThreadInfo->ImageReady = true;
     }
     return NULL;
 }
@@ -31,5 +31,5 @@ internal bool RequestImageAsync(thread_info_image *ThreadInfo, char *FileName)
 {
     ThreadInfo->FileName = FileName;
     dispatch_semaphore_signal(ThreadInfo->SemaphoreHandle);
-    return ThreadInfo->DataLoaded;
+    return ThreadInfo->ImageReady;
 }
