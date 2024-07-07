@@ -9,7 +9,6 @@ void SaveLabelsToFile(char Labels[MAX_LENGTH][MAX_STRINGS], u32 TotalLabels)
     PathStrs[3] = (char *)"labels";
     PathStrs[4] = (char *)"label.lann";
     FullPath = TextJoin((const char **)PathStrs,5,"/");
-    printf("BAUBAU@@@@@@@@@ %s\n", FullPath);
 
     FILE *file = fopen(FullPath, "w");
     if (file == NULL) {

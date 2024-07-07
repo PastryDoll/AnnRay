@@ -1,3 +1,8 @@
+
+#undef RAYGUI_IMPLEMENTATION            // Avoid including raygui implementation again
+#define GUI_WINDOW_FILE_DIALOG_IMPLEMENTATION
+#include "gui_window_file_dialog.h"
+
 enum new_project_text_field
 {
     ProjectNameField,
@@ -60,7 +65,13 @@ u32 CreateProjectFolder(char *ProjectName)
 
 internal
 u32 NewProjectPage()
-{
+{   
+    internal GuiWindowFileDialogState fileDialogState;
+    if (GlobalState.PreviousPage != NEW_PROJECT_PAGE)
+    {
+        fileDialogState = InitGuiWindowFileDialog(GetWorkingDirectory());
+    }
+
     u32 CurrentGesture = GetGestureDetected();
     u32 ScreenWidth = GetScreenWidth();
     u32 ScreenHeight = GetScreenHeight();
@@ -146,6 +157,12 @@ u32 NewProjectPage()
 
         if(GuiButton({PANELWIDTH*0.6,10,PANELWIDTH*0.19,30},"BACK")) return FRONT_PAGE;
         if(GuiButton(DoneButton,"Done!"))
+
+        if (fileDialogState.windowActive) GuiLock();
+        if (GuiButton((Rectangle){ ImageFolderRec.x + 1, ImageFolderRec.y, 10, 10 }, GuiIconText(ICON_ARROW_DOWN, ""))) fileDialogState.windowActive = true;
+        GuiUnlock();
+        GuiWindowFileDialog(&fileDialogState);
+        printf("%s\n",fileDialogState.dirPathText);
 
         DrawFPS(10,10);
     EndDrawing();

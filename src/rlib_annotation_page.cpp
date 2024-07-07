@@ -690,10 +690,11 @@ u32 AnnotationPage(FilePathList PathList, thread_info_image *AnnThreadInfo)
     {
         TotalImages = PathList.count;
         char *ImagePath = PathList.paths[CurrentImageId];
+        UnloadTexture(AnnotationDisplay.ImageTexture);
+        UnloadRenderTexture(AnnotationDisplay.DisplayTexture);
         AnnotationDisplay.DisplayTexture = LoadRenderTexture(FullImageDisplayWidth,FullImageDisplayHeight);
         SetTextureFilter(AnnotationDisplay.DisplayTexture.texture, TEXTURE_FILTER_BILINEAR);
         AnnotationDisplay.camera = {{0,0}, {0,0}, 0, 1.0f};
-        UnloadTexture(AnnotationDisplay.ImageTexture);
         RequestImageAsync(AnnThreadInfo, ImagePath);
         IsTextureReady2 = false;
 
@@ -794,7 +795,6 @@ u32 AnnotationPage(FilePathList PathList, thread_info_image *AnnThreadInfo)
     {
         TotalLabels = SaveAnnToFile(CurrentAnnFile,&Bboxes); //@SpeedUp Dont call this every
         SaveLabelsToFile(Labels, TotalLabels);
-        printf("HELLO2 ?\n");
         assert(TotalLabels > 0);
     }
 
