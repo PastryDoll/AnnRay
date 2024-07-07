@@ -501,7 +501,7 @@ u32 DrawLeftPanel(u32 TotalLabels)
         if (clicked)
         {
             writing = true;
-            TextInputBox(NewLabelRec, &Active, &CurrentCursorSprite, newLabelName, &letterCount, MAX_LENGTH);
+            TextInputBox(NewLabelRec, &Active, &CurrentCursorSprite, newLabelName, &letterCount, MAX_LENGTH,20);
             DrawText(newLabelName, (u32)NewLabelRec.x + 5, (u32)NewLabelRec.y + 5, 20, BLACK);
 
 

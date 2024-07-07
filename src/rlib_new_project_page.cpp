@@ -92,8 +92,8 @@ u32 NewProjectPage()
     internal char TmpProjectName[MAX_LENGTH]; 
     internal char TmpImageFolder[512]; 
     internal char TmpTags[512]; 
-    FieldsTmpTextPtrs[ImageFolderField] = TmpImageFolder;
     FieldsTmpTextPtrs[ProjectNameField] = TmpProjectName;
+    FieldsTmpTextPtrs[ImageFolderField] = TmpImageFolder;
     FieldsTmpTextPtrs[TagsField] = TmpTags;
 
     internal u32 LetterCount[FieldsCount];
@@ -110,8 +110,11 @@ u32 NewProjectPage()
 
         for (u32 i = 0; i < FieldsCount; ++i)
         {
-            TextInputBox(FieldsRecs[i], &FieldsActive[i], &CurrentCursorSprite, FieldsTmpTextPtrs[i], &LetterCount[i], MaxLengths[i]);
-            DrawText(FieldsTmpTextPtrs[i], (u32)FieldsRecs[i].x + 5, (u32)FieldsRecs[i].y + 5, 20, BLACK);
+            TextInputBox(FieldsRecs[i], &FieldsActive[i], &CurrentCursorSprite, FieldsTmpTextPtrs[i], &LetterCount[i], MaxLengths[i],2);
+            // printf("Letter count %u\n", LetterCount[i]);
+            // printf("Text: %s\n", FieldsTmpTextPtrs[i]);
+            // printf("Active: %u\n", FieldsActive[i]);
+            DrawText(FieldsTmpTextPtrs[i], (u32)FieldsRecs[i].x + 5, (u32)FieldsRecs[i].y + 5, 2, BLACK);
 
             if (CheckCollisionPointRec(GetMousePosition(), FieldsRecs[i]) && (IsGestureTapped(CurrentGesture)))
             {
@@ -129,14 +132,14 @@ u32 NewProjectPage()
                 if(FieldsActive[i])
                 {
                     FieldsActive[i] = false;
-                    printf("i: %u\n", i);
-
                     if (i + 1 < FieldsCount) FieldsActive[i+1] = true;
                     break;
                 }
             }
         }
 
+        if(GuiButton({PANELWIDTH*0.6,10,PANELWIDTH*0.19,30},"BACK")) return FRONT_PAGE;
+        if(GuiButton(DoneButton,"Done!"))
         {
             bool NonEmptyTexts = true;
             for (u32 i = 0; i < FieldsCount; ++i)
@@ -153,17 +156,26 @@ u32 NewProjectPage()
                 TextCopy(GlobalState.ProjectName, TmpProjectName);
                 return FRONT_PAGE;
             }
-        } 
-
-        if(GuiButton({PANELWIDTH*0.6,10,PANELWIDTH*0.19,30},"BACK")) return FRONT_PAGE;
-        if(GuiButton(DoneButton,"Done!"))
+        }
 
         if (fileDialogState.windowActive) GuiLock();
-        if (GuiButton((Rectangle){ ImageFolderRec.x + 1, ImageFolderRec.y, 10, 10 }, GuiIconText(ICON_ARROW_DOWN, ""))) fileDialogState.windowActive = true;
+        if (GuiButton((Rectangle){ ImageFolderRec.x + ImageFolderRec.width, ImageFolderRec.y, ImageFolderRec.height, ImageFolderRec.height }, GuiIconText(ICON_ARROW_DOWN, ""))) fileDialogState.windowActive = true;
         GuiUnlock();
         GuiWindowFileDialog(&fileDialogState);
-        printf("%s\n",fileDialogState.dirPathText);
+        if (fileDialogState.SelectFilePressed)
+        {
+            fileDialogState.SelectFilePressed = false;
+            char *PathSelected = fileDialogState.dirPathText;
+            if (!IsPathFile(PathSelected))
+            {
+                TextCopy(FieldsTmpTextPtrs[ImageFolderField], PathSelected);
+            }
+            else
+            {
+                fileDialogState.windowActive = true;
+            } 
 
+        } 
         DrawFPS(10,10);
     EndDrawing();
 

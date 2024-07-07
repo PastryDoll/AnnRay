@@ -1,6 +1,6 @@
 //@TODO block other shortkeys
 internal 
-void TextInputBox(Rectangle rectangle, bool *Active, u8 *CurrentCursorSprite, char* name, u32 *letterCount, u32 maxLenght)
+void TextInputBox(Rectangle rectangle, bool *Active, u8 *CurrentCursorSprite, char* name, u32 *letterCount, u32 maxLenght, u32 fontSize)
 {
     DrawRectangleRec(rectangle, BLUE);
     if (*Active)
@@ -10,7 +10,7 @@ void TextInputBox(Rectangle rectangle, bool *Active, u8 *CurrentCursorSprite, ch
         while (key > 0)
         {
             // NOTE: Only allow keys in range [32..125]
-            if ((key >= 32) && (key <= 125) && (*letterCount < maxLenght))
+            if ((key >= 32) && (key <= 125) && (*letterCount < maxLenght - 1))
             {
                 name[*letterCount] = (char)key;
                 name[*letterCount+1] = '\0'; // Add null terminator at the end of the string.
@@ -30,7 +30,11 @@ void TextInputBox(Rectangle rectangle, bool *Active, u8 *CurrentCursorSprite, ch
         {
 
             // Draw blinking underscore char
-            if ((((u32)(GetTime()*2))%2) == 0) DrawText("|", (int)rectangle.x + 8 + MeasureText(name, 20), (u32)rectangle.y + 5, 20, BLACK);
+            if ((((u32)(GetTime()*2))%2) == 0) DrawText("|", (int)rectangle.x + 8 + MeasureText(name, fontSize), (u32)rectangle.y + 5, fontSize, BLACK);
+        }
+        else 
+        {
+            *Active = false;
         }
     } 
 }
