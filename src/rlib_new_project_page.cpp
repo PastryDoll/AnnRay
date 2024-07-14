@@ -20,41 +20,38 @@ u32 GetLabels(char *Labels)
     return 1;
 }
 
-u32 CopyImagesToFolder(char* dst, FilePathList src)
+u32 CopyImageToFolder(char* dst, FilePathList src, u32 CurrIndex)
 {
     char buffer[8*1024];
     u32 n;
-    for (u32 i = 0; i < src.count; ++i)
-    {
-        char *SrcPath = src.paths[i];
-        const char *DstPath = TextFormat("%s/%s", dst, GetFileName(SrcPath));
-        printf("Copyng : %s to %s with %s\n", SrcPath, DstPath, dst);
+    char *SrcPath = src.paths[CurrIndex];
+    const char *DstPath = TextFormat("%s/%s", dst, GetFileName(SrcPath));
+    printf("Copyng : %s to %s with %s\n", SrcPath, DstPath, dst);
 
-        FILE *SrcFile = fopen(SrcPath, "rb");
-        if (SrcFile == NULL) {
-            perror("Error opening source file");
-            return 0;
-        }
-
-        FILE *DstFile = fopen(DstPath, "wb");
-        if (DstFile == NULL) {
-            perror("Error opening destination file");
-            fclose(SrcFile);
-            return 0;
-        }
-
-        while ((n = fread(buffer, sizeof(char), sizeof(buffer), SrcFile)) > 0) {
-            if (fwrite(buffer, sizeof(char), n, DstFile) != n) {
-                perror("Error writing to destination file");
-                fclose(SrcFile);
-                fclose(DstFile);
-                return 0;
-            }
-        }
-        
-        fclose(SrcFile);
-        fclose(DstFile);
+    FILE *SrcFile = fopen(SrcPath, "rb");
+    if (SrcFile == NULL) {
+        perror("Error opening source file");
+        return 0;
     }
+
+    FILE *DstFile = fopen(DstPath, "wb");
+    if (DstFile == NULL) {
+        perror("Error opening destination file");
+        fclose(SrcFile);
+        return 0;
+    }
+
+    while ((n = fread(buffer, sizeof(char), sizeof(buffer), SrcFile)) > 0) {
+        if (fwrite(buffer, sizeof(char), n, DstFile) != n) {
+            perror("Error writing to destination file");
+            fclose(SrcFile);
+            fclose(DstFile);
+            return 0;
+        }
+    }
+    
+    fclose(SrcFile);
+    fclose(DstFile);
     return 1;
 }
 
@@ -162,6 +159,9 @@ u32 NewProjectPage()
     u32 MaxLengths[FieldsCount] = {MAX_LENGTH, 512, MAX_LENGTH};
 
     Rectangle DoneButton = {.x = ScreenWidth*0.8f, .y = ScreenHeight*0.85f, .width = ScreenWidth*0.1f, .height = ScreenHeight*0.05f};
+
+    internal bool Processing = false;
+    internal bool Done = false;
     
     BeginDrawing();
         ClearBackground(GREEN);
@@ -216,6 +216,10 @@ u32 NewProjectPage()
 
         } 
         if(GuiButton({PANELWIDTH*0.6,10,PANELWIDTH*0.19,30},"BACK")) return FRONT_PAGE;
+
+        internal char ImgsFolder[1024];
+        internal FilePathList ImagesPaths;
+        internal u32 CurrIndexCopy = 0;
         if(GuiButton(DoneButton,"Done!"))
         {
             bool NonEmptyTexts = true;
@@ -229,20 +233,31 @@ u32 NewProjectPage()
             }
             if (NonEmptyTexts)
             {
+                Processing = true;
                 TextCopy(GlobalState.ProjectName, TmpProjectName);
                 CreateProjectFolder(GlobalState.ProjectName);
-                FilePathList ImagesPaths = LoadDirectoryFiles(FieldsTmpTextPtrs[ImageFolderField]);
-                char ImgsFolder[1024];
+                ImagesPaths = LoadDirectoryFiles(FieldsTmpTextPtrs[ImageFolderField]);
                 TextCopy(ImgsFolder, TextFormat("../projects/%s/images",GlobalState.ProjectName));
-                CopyImagesToFolder(ImgsFolder,ImagesPaths);
                 GlobalState.IsProjectSelected = true;
                 PathList = LoadDirectoryFiles(TextFormat("../projects/%s/images", GlobalState.ProjectName));
                 GetLabels(FieldsTmpTextPtrs[LabelsField]);
-                return FRONT_PAGE;
+            }
+        }
+        if (Processing)
+        {
+            CopyImageToFolder(ImgsFolder,ImagesPaths, CurrIndexCopy++);
+            if (CurrIndexCopy >= ImagesPaths.count)
+            {
+                CurrIndexCopy = 0;
+                Done = true;
+            } 
+            else 
+            {
+                DrawText(TextFormat("%u/%u", CurrIndexCopy, ImagesPaths.count), 100,100,10,RED);
             }
         }
         DrawFPS(10,10);
     EndDrawing();
-
+    if (Done) return FRONT_PAGE;
     return NEW_PROJECT_PAGE;
 };

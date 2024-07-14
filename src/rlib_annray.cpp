@@ -18,10 +18,6 @@
 #include "raygui.h"
 #include "raymath.h"
 
-#define TEST_FOLDER_PNG "../images_samplepng/"
-#define TEST_FOLDER_JPG "../test_material/images_sample"
-#define TEST_PIC "DJI_0325.JPG"
-
 #define SCREEN_WIDTH 1200
 #define SCREEN_HEIGHT 720
 
