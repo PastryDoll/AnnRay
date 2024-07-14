@@ -13,7 +13,6 @@ internal void *AsyncImageLoading(void *arg)
     thread_info_image *ThreadInfo = (thread_info_image *)arg;
     for (;;)
     {
-        printf("Im a thread\n");
         // if (ThreadInfo->AsyncImage.data != nullptr)
         // {
         //     UnloadImage(ThreadInfo->AsyncImage);

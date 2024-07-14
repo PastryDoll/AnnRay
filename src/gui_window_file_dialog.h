@@ -1,3 +1,4 @@
+// THIS FILE WAS MODIFIED BY CAIO PANTAROTTO
 /*******************************************************************************************
 *
 *   Window File Dialog v1.2 - Modal file dialog to open/save files

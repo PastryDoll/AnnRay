@@ -11,6 +11,43 @@ enum new_project_text_field
     FieldsCount
 };
 
+u32 CopyImagesToFolder(char* dst, FilePathList src)
+{
+    char buffer[8*1024];
+    u32 n;
+    for (u32 i = 0; i < src.count; ++i)
+    {
+        char *SrcPath = src.paths[i];
+        const char *DstPath = TextFormat("%s/%s", dst, GetFileName(SrcPath));
+
+        FILE *SrcFile = fopen(SrcPath, "rb");
+        if (SrcFile == NULL) {
+            perror("Error opening source file");
+            return -1;
+        }
+
+        FILE *DstFile = fopen(DstPath, "wb");
+        if (DstFile == NULL) {
+            perror("Error opening destination file");
+            fclose(SrcFile);
+            return -1;
+        }
+
+        while ((n = fread(buffer, sizeof(char), sizeof(buffer), SrcFile)) > 0) {
+            if (fwrite(buffer, sizeof(char), n, DstFile) != n) {
+                perror("Error writing to destination file");
+                fclose(SrcFile);
+                fclose(DstFile);
+                return -1;
+            }
+        }
+        
+        fclose(SrcFile);
+        fclose(DstFile);
+    }
+    return 1;
+}
+
 u32 CreateProjectFolder(char *ProjectName)
 {   
     char *PathStrs[4];
@@ -58,7 +95,22 @@ u32 CreateProjectFolder(char *ProjectName)
     if (!DirectoryExists(FullPath))
     {
         CreateDirectory(FullPath);
-    }; 
+    };
+
+    // 
+    //// Images Folder
+    //  
+
+    PathStrs[0] = (char *)"..";
+    PathStrs[1] = (char *)"projects";
+    PathStrs[2] = ProjectName;
+    PathStrs[3] = (char *)"images";
+    FullPath = TextJoin((const char **)PathStrs,4,"/");
+
+    if (!DirectoryExists(FullPath))
+    {
+        CreateDirectory(FullPath);
+    };
 
     return 0;
 };
@@ -138,26 +190,6 @@ u32 NewProjectPage()
             }
         }
 
-        if(GuiButton({PANELWIDTH*0.6,10,PANELWIDTH*0.19,30},"BACK")) return FRONT_PAGE;
-        if(GuiButton(DoneButton,"Done!"))
-        {
-            bool NonEmptyTexts = true;
-            for (u32 i = 0; i < FieldsCount; ++i)
-            {
-                if (!(TextLength(FieldsTmpTextPtrs[i]) > 0))
-                {
-                    NonEmptyTexts = false;
-                    break;
-                }
-            }
-            if (NonEmptyTexts)
-            {
-                CreateProjectFolder(GlobalState.ProjectName);
-                TextCopy(GlobalState.ProjectName, TmpProjectName);
-                return FRONT_PAGE;
-            }
-        }
-
         if (fileDialogState.windowActive) GuiLock();
         if (GuiButton((Rectangle){ ImageFolderRec.x + ImageFolderRec.width, ImageFolderRec.y, ImageFolderRec.height, ImageFolderRec.height }, GuiIconText(ICON_ARROW_DOWN, ""))) fileDialogState.windowActive = true;
         GuiUnlock();
@@ -176,6 +208,28 @@ u32 NewProjectPage()
             } 
 
         } 
+        if(GuiButton({PANELWIDTH*0.6,10,PANELWIDTH*0.19,30},"BACK")) return FRONT_PAGE;
+        if(GuiButton(DoneButton,"Done!"))
+        {
+            bool NonEmptyTexts = true;
+            for (u32 i = 0; i < FieldsCount; ++i)
+            {
+                if (!(TextLength(FieldsTmpTextPtrs[i]) > 0))
+                {
+                    NonEmptyTexts = false;
+                    break;
+                }
+            }
+            if (NonEmptyTexts)
+            {
+                TextCopy(GlobalState.ProjectName, TmpProjectName);
+                CreateProjectFolder(GlobalState.ProjectName);
+                FilePathList ImagesPaths = LoadDirectoryFiles(FieldsTmpTextPtrs[ImageFolderField]);
+                CopyImagesToFolder((char*)TextFormat("../projects/%s/images", GlobalState.ProjectName),ImagesPaths);
+                GlobalState.IsProjectSelected = true;
+                return FRONT_PAGE;
+            }
+        }
         DrawFPS(10,10);
     EndDrawing();
 

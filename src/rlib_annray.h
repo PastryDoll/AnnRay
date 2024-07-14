@@ -129,6 +129,7 @@ struct global_state
     char ProjectName[MAX_LENGTH];
 };
 
+
 struct bbox
 {
     u32 Label;

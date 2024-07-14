@@ -30,6 +30,7 @@
 
 #define MAX_STRINGS 16
 #define MAX_LENGTH 16
+#define MAX_PROJECT_NAME 16
 
 #include "rlib_annray.h"
 #include "annray_math.h"
@@ -75,8 +76,14 @@ int main()
     if (IsEnv == false) CreateEnv();
 
     // Get last project
-    TextCopy(GlobalState.ProjectName, LoadFileText("../projects/last_project.txt"));
-    if (!TextIsEqual(GlobalState.ProjectName, "NoProjectName")) GlobalState.IsProjectSelected = true;
+    {
+        char TmpProjectName[MAX_PROJECT_NAME];
+        TextCopy(TmpProjectName, LoadFileText("../projects/last_project.txt"));
+        const char *ProjectPath = TextFormat("../projects/%s", TmpProjectName);
+        if (DirectoryExists(ProjectPath)) TextCopy(GlobalState.ProjectName, TmpProjectName);
+        else TextCopy(GlobalState.ProjectName, "NoProjectName");
+        if (!TextIsEqual(GlobalState.ProjectName, "NoProjectName")) GlobalState.IsProjectSelected = true;
+    }
 
     bool running = true;
     while(running)
