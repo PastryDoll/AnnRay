@@ -1,7 +1,7 @@
 #include "yolo_format.h"
 
 internal
-u32 ExportPage(FilePathList PathList)
+u32 ExportPage()
 {
     BeginDrawing();
         ClearBackground(GREEN);

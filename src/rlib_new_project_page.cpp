@@ -7,9 +7,18 @@ enum new_project_text_field
 {
     ProjectNameField,
     ImageFolderField,
-    TagsField,
+    LabelsField,
     FieldsCount
 };
+
+u32 GetLabels(char *Labels)
+{   
+    s32 count; 
+    const char **SplitLabels;
+    SplitLabels = TextSplit(Labels, ';', &count);
+    SaveLabelsToFile(SplitLabels, count);
+    return 1;
+}
 
 u32 CopyImagesToFolder(char* dst, FilePathList src)
 {
@@ -19,18 +28,19 @@ u32 CopyImagesToFolder(char* dst, FilePathList src)
     {
         char *SrcPath = src.paths[i];
         const char *DstPath = TextFormat("%s/%s", dst, GetFileName(SrcPath));
+        printf("Copyng : %s to %s with %s\n", SrcPath, DstPath, dst);
 
         FILE *SrcFile = fopen(SrcPath, "rb");
         if (SrcFile == NULL) {
             perror("Error opening source file");
-            return -1;
+            return 0;
         }
 
         FILE *DstFile = fopen(DstPath, "wb");
         if (DstFile == NULL) {
             perror("Error opening destination file");
             fclose(SrcFile);
-            return -1;
+            return 0;
         }
 
         while ((n = fread(buffer, sizeof(char), sizeof(buffer), SrcFile)) > 0) {
@@ -38,7 +48,7 @@ u32 CopyImagesToFolder(char* dst, FilePathList src)
                 perror("Error writing to destination file");
                 fclose(SrcFile);
                 fclose(DstFile);
-                return -1;
+                return 0;
             }
         }
         
@@ -133,20 +143,20 @@ u32 NewProjectPage()
     Rectangle FieldsRecs[FieldsCount];
     Rectangle ProjectNameRec = {.x = ScreenWidth/2.0f + 10, .y = 100, .width = 300, .height = 30};
     Rectangle ImageFolderRec = {.x = ScreenWidth/2.0f + 10, .y = 100 + 35, .width = 300, .height = 30};
-    Rectangle TagsRec = {.x = ScreenWidth/2.0f + 10, .y = 100 + 2*35, .width = 300, .height = 30};
+    Rectangle LabelsRec = {.x = ScreenWidth/2.0f + 10, .y = 100 + 2*35, .width = 300, .height = 30};
     FieldsRecs[ProjectNameField] = ProjectNameRec; 
     FieldsRecs[ImageFolderField] = ImageFolderRec; 
-    FieldsRecs[TagsField] = TagsRec; 
+    FieldsRecs[LabelsField] = LabelsRec; 
 
     internal bool FieldsActive[FieldsCount] = {0};
 
     char *FieldsTmpTextPtrs[FieldsCount];
     internal char TmpProjectName[MAX_LENGTH]; 
     internal char TmpImageFolder[512]; 
-    internal char TmpTags[512]; 
+    internal char TmpLabels[512]; 
     FieldsTmpTextPtrs[ProjectNameField] = TmpProjectName;
     FieldsTmpTextPtrs[ImageFolderField] = TmpImageFolder;
-    FieldsTmpTextPtrs[TagsField] = TmpTags;
+    FieldsTmpTextPtrs[LabelsField] = TmpLabels;
 
     internal u32 LetterCount[FieldsCount];
     u32 MaxLengths[FieldsCount] = {MAX_LENGTH, 512, MAX_LENGTH};
@@ -157,15 +167,12 @@ u32 NewProjectPage()
         ClearBackground(GREEN);
         DrawText("Project Name:", ScreenWidth/2 - ProjectNameW,100,FontSize,BLACK);
         DrawText("Images Folder", ScreenWidth/2 - ProjectNameW,100 + 35,FontSize,BLACK);
-        DrawText("Tags:", ScreenWidth/2 - ProjectNameW,100 + 2*35,FontSize,BLACK);
+        DrawText("Labels (separeted by ;):", ScreenWidth/2 - ProjectNameW,100 + 2*35,FontSize,BLACK);
 
 
         for (u32 i = 0; i < FieldsCount; ++i)
         {
             TextInputBox(FieldsRecs[i], &FieldsActive[i], &CurrentCursorSprite, FieldsTmpTextPtrs[i], &LetterCount[i], MaxLengths[i],2);
-            // printf("Letter count %u\n", LetterCount[i]);
-            // printf("Text: %s\n", FieldsTmpTextPtrs[i]);
-            // printf("Active: %u\n", FieldsActive[i]);
             DrawText(FieldsTmpTextPtrs[i], (u32)FieldsRecs[i].x + 5, (u32)FieldsRecs[i].y + 5, 2, BLACK);
 
             if (CheckCollisionPointRec(GetMousePosition(), FieldsRecs[i]) && (IsGestureTapped(CurrentGesture)))
@@ -225,8 +232,12 @@ u32 NewProjectPage()
                 TextCopy(GlobalState.ProjectName, TmpProjectName);
                 CreateProjectFolder(GlobalState.ProjectName);
                 FilePathList ImagesPaths = LoadDirectoryFiles(FieldsTmpTextPtrs[ImageFolderField]);
-                CopyImagesToFolder((char*)TextFormat("../projects/%s/images", GlobalState.ProjectName),ImagesPaths);
+                char ImgsFolder[1024];
+                TextCopy(ImgsFolder, TextFormat("../projects/%s/images",GlobalState.ProjectName));
+                CopyImagesToFolder(ImgsFolder,ImagesPaths);
                 GlobalState.IsProjectSelected = true;
+                PathList = LoadDirectoryFiles(TextFormat("../projects/%s/images", GlobalState.ProjectName));
+                GetLabels(FieldsTmpTextPtrs[LabelsField]);
                 return FRONT_PAGE;
             }
         }

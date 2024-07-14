@@ -37,6 +37,7 @@
 
 global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAGE, .IsProjectSelected = false, .ProjectName = "NoProjectName"};
 global u8 CurrentCursorSprite = 0;
+global FilePathList PathList;
 
 #include "annray_async_image.cpp"
 #include "annray_fileio.cpp"
@@ -65,9 +66,6 @@ int main()
     AnnThreadInfo.AsyncImage.data = nullptr;
     u32 AnnThreadError = pthread_create(&AnnThreadId, NULL,AsyncImageLoading, &AnnThreadInfo);
     if (AnnThreadError != 0) printf("Error creating thread for async image loading on annotation page\n");
-
-    const char *FolderPath = TEST_FOLDER_JPG;
-    FilePathList PathList = LoadDirectoryFiles(FolderPath);
     
     Music FrontPageMusic = LoadMusicStream("../assets/awesomeness.wav");
     PlayMusicStream(FrontPageMusic);
@@ -82,7 +80,12 @@ int main()
         const char *ProjectPath = TextFormat("../projects/%s", TmpProjectName);
         if (DirectoryExists(ProjectPath)) TextCopy(GlobalState.ProjectName, TmpProjectName);
         else TextCopy(GlobalState.ProjectName, "NoProjectName");
-        if (!TextIsEqual(GlobalState.ProjectName, "NoProjectName")) GlobalState.IsProjectSelected = true;
+        if (!TextIsEqual(GlobalState.ProjectName, "NoProjectName"))
+        {
+            GlobalState.IsProjectSelected = true;
+            PathList = LoadDirectoryFiles(TextFormat("../projects/%s/images", GlobalState.ProjectName));
+        } 
+         
     }
 
     bool running = true;
@@ -93,7 +96,6 @@ int main()
         {
 
         // The front page dispatch to other pages and also render the page selection page
-
         case FRONT_PAGE:
         {
             GlobalState.CurrentPage = FrontPage(&FrontPageMusic);
@@ -127,7 +129,7 @@ int main()
         }
         case EXPORT_PAGE:
         {
-            GlobalState.CurrentPage = ExportPage(PathList);
+            GlobalState.CurrentPage = ExportPage();
             GlobalState.PreviousPage = EXPORT_PAGE;
 
         break;

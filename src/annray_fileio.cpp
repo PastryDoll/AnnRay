@@ -23,6 +23,31 @@ void SaveLabelsToFile(char Labels[MAX_LENGTH][MAX_STRINGS], u32 TotalLabels)
 
     fclose(file);
 }
+internal const
+void SaveLabelsToFile(const char** Labels, u32 TotalLabels)
+{
+    char *PathStrs[5];
+    const char *FullPath;
+    PathStrs[0] = (char *)"..";
+    PathStrs[1] = (char *)"projects";
+    PathStrs[2] = GlobalState.ProjectName;
+    PathStrs[3] = (char *)"labels";
+    PathStrs[4] = (char *)"label.lann";
+    FullPath = TextJoin((const char **)PathStrs,5,"/");
+
+    FILE *file = fopen(FullPath, "w");
+    if (file == NULL) {
+        printf("Error opening label file!\n");
+        assert(0);
+    }
+    fprintf(file, "%u\n", TotalLabels);
+    for (int i = 0; i < TotalLabels-1; i++) {
+        fprintf(file, "%s\n", Labels[i]);
+    }
+    fprintf(file, "%s", Labels[TotalLabels-1]);
+
+    fclose(file);
+}
 
 u32 ReadLabelsFromFile(char Labels[MAX_LENGTH][MAX_STRINGS]) 
 {
