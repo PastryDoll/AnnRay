@@ -253,7 +253,7 @@ u32 NewProjectPage()
             } 
             else 
             {
-                DrawText(TextFormat("%u/%u", CurrIndexCopy, ImagesPaths.count), 100,100,10,RED);
+                DrawText(TextFormat("%u/%u", CurrIndexCopy, ImagesPaths.count), 100,100,50,RED);
             }
         }
         DrawFPS(10,10);

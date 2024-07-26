@@ -34,6 +34,7 @@
 global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAGE, .IsProjectSelected = false, .ProjectName = "NoProjectName"};
 global u8 CurrentCursorSprite = 0;
 global FilePathList PathList;
+global Shader shaders = { 0 };
 
 #include "annray_async_image.cpp"
 #include "annray_fileio.cpp"
@@ -45,6 +46,7 @@ global FilePathList PathList;
 #include "rlib_inventory_page.cpp"
 #include "rlib_export_page.cpp"
 
+    // NOTE: Defining 0 (NULL) for vertex shader forces usage of internal default vertex shader
 int main()
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
@@ -52,6 +54,8 @@ int main()
     SetWindowMinSize(PANELWIDTH + 50, PANELWIDTH + 50);
     SetTargetFPS(120);
     InitAudioDevice();
+    shaders = LoadShader(0, TextFormat("../shaders/annotation_focus.fs", 330));
+
 
     // Start Thread for async loading of image on annotation page
     pthread_t AnnThreadId;

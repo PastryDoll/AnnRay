@@ -765,8 +765,10 @@ u32 AnnotationPage(FilePathList PathList, thread_info_image *AnnThreadInfo)
 //  
     BeginDrawing();
         ClearBackground(PINK);
-        DrawTexturePro(AnnotationDisplay.DisplayTexture.texture, (Rectangle){ 0.0f, 0.0f, (float)AnnotationDisplay.DisplayTexture.texture.width, (float)-AnnotationDisplay.DisplayTexture.texture.height},
-                (Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        BeginShaderMode(shaders);
+            DrawTexturePro(AnnotationDisplay.DisplayTexture.texture, (Rectangle){ 0.0f, 0.0f, (float)AnnotationDisplay.DisplayTexture.texture.width, (float)-AnnotationDisplay.DisplayTexture.texture.height},
+                    (Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        EndShaderMode();
         TotalLabels = DrawLeftPanel(TotalLabels); // Panel After RenderImageDisplay otherwise it breaks CursorSprite
 
         // Back to Front Page
