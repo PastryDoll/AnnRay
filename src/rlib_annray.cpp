@@ -35,7 +35,7 @@ global_state GlobalState = {.CurrentPage = FRONT_PAGE, .PreviousPage = FRONT_PAG
 global u8 CurrentCursorSprite = 0;
 global FilePathList PathList;
 global Shader shaders = { 0 };
-
+global s32 FragBoxLoc; 
 #include "annray_async_image.cpp"
 #include "annray_fileio.cpp"
 #include "rlib_UIcommons.cpp"
@@ -55,7 +55,7 @@ int main()
     SetTargetFPS(120);
     InitAudioDevice();
     shaders = LoadShader(0, TextFormat("../shaders/annotation_focus.fs", 330));
-
+    FragBoxLoc = GetShaderLocation(shaders, "bbox");
 
     // Start Thread for async loading of image on annotation page
     pthread_t AnnThreadId;

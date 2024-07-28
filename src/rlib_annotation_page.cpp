@@ -392,7 +392,15 @@ void DrawRenderImageDisplay()
             DrawText("Loading...", (AnnotationDisplay.DisplayTexture.texture.width - MeasureText("Loading...", 50))*0.5f,AnnotationDisplay.DisplayTexture.texture.height*0.5f - 50, 50, RED);
             if (IsTextureReady2)
             {
-                DrawTexture(AnnotationDisplay.ImageTexture,0,0,WHITE);
+                printf("RenderWidth %d\n", AnnotationDisplay.ImageTexture.width);
+                f32 ImageWidth = AnnotationDisplay.ImageTexture.width;
+                f32 ImageHeight = AnnotationDisplay.ImageTexture.height;
+                BeginShaderMode(shaders);
+                    Rectangle CurrBox = Bboxes.Boxes[AnnotationState.CurrentBbox].Box;
+                    Rectangle NormalizedCurrBox = (Rectangle){CurrBox.x/ImageWidth, CurrBox.y/ImageHeight, CurrBox.width/ImageWidth, CurrBox.height/ImageHeight};
+                    SetShaderValue(shaders, FragBoxLoc, &NormalizedCurrBox, SHADER_UNIFORM_VEC4);
+                    DrawTexture(AnnotationDisplay.ImageTexture,0,0,WHITE);
+                EndShaderMode();
             //@TODO Maybe we do a fragment shader for rectangle drawing
                 for (u32 BoxId = 0; BoxId < Bboxes.TotalBoxes+1; ++BoxId)
                 {
@@ -400,8 +408,9 @@ void DrawRenderImageDisplay()
                     DrawRectangleLinesEx(Bboxes.Boxes[BoxId].Box,2/AnnotationDisplay.camera.zoom,LabelsColors[Bboxes.Boxes[BoxId].Label]);
                 }
 
-                DrawRectangleRec(Bboxes.Boxes[AnnotationState.CurrentBbox].Box,WHITE);
+                // DrawRectangleRec(Bboxes.Boxes[AnnotationState.CurrentBbox].Box,WHITE);
                 {
+                    // printf("Current: %f,%f\n",Bboxes.Boxes[AnnotationState.CurrentBbox].Box.x, Bboxes.Boxes[AnnotationState.CurrentBbox].Box.y);
                     // u32 x = (f32)Bboxes[AnnotationState.CurrentBbox].Box.x;
                     // u32 y = (f32)Bboxes[AnnotationState.CurrentBbox].Box.y;
                     // u32 w = (f32)Bboxes[AnnotationState.CurrentBbox].Box.width;
@@ -765,10 +774,11 @@ u32 AnnotationPage(FilePathList PathList, thread_info_image *AnnThreadInfo)
 //  
     BeginDrawing();
         ClearBackground(PINK);
-        BeginShaderMode(shaders);
+        // BeginShaderMode(shaders);
+        //     SetShaderValue(shaders, FragBoxLoc, &Bboxes.Boxes[AnnotationState.CurrentBbox].Box, SHADER_UNIFORM_VEC4);
             DrawTexturePro(AnnotationDisplay.DisplayTexture.texture, (Rectangle){ 0.0f, 0.0f, (float)AnnotationDisplay.DisplayTexture.texture.width, (float)-AnnotationDisplay.DisplayTexture.texture.height},
                     (Rectangle){PANELWIDTH,0,FullImageDisplayWidth,FullImageDisplayHeight}, (Vector2){ 0, 0 }, 0.0f, WHITE);
-        EndShaderMode();
+        // EndShaderMode();
         TotalLabels = DrawLeftPanel(TotalLabels); // Panel After RenderImageDisplay otherwise it breaks CursorSprite
 
         // Back to Front Page
