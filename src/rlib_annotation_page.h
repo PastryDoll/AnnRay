@@ -44,6 +44,7 @@ struct annotation_page_state
     s32 PrevGesture;
     s32 CurrentLabel;
     u32 CurrentBbox;
+    bool FocusMode = false;
 };
 
 struct zoom

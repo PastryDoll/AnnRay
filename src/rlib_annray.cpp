@@ -36,6 +36,7 @@ global u8 CurrentCursorSprite = 0;
 global FilePathList PathList;
 global Shader shaders = { 0 };
 global s32 FragBoxLoc; 
+global s32 FragActiveLoc; 
 #include "annray_async_image.cpp"
 #include "annray_fileio.cpp"
 #include "rlib_UIcommons.cpp"
@@ -56,6 +57,7 @@ int main()
     InitAudioDevice();
     shaders = LoadShader(0, TextFormat("../shaders/annotation_focus.fs", 330));
     FragBoxLoc = GetShaderLocation(shaders, "bbox");
+    FragActiveLoc = GetShaderLocation(shaders, "IsActive");
 
     // Start Thread for async loading of image on annotation page
     pthread_t AnnThreadId;
