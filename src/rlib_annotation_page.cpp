@@ -28,17 +28,16 @@ bool isBoxGrabbed = false;
 
 //@TODO Make this better.  This is actually broken.. we need to be carefull of what we delete.. take a look on this.
 internal
-void DeleteBox(annotation_page_state AnnotationState, bboxes *Bboxes) {
-    if (AnnotationState.CurrentBbox <  Bboxes->TotalBoxes)
+void DeleteBox(bboxes *Bboxes, u32 LabelToDelete) {
+    if (LabelToDelete <  Bboxes->TotalBoxes)
     {
-        u32 LabelToDelete = Bboxes->Boxes[AnnotationState.CurrentBbox].Label;
         if (Bboxes->TotalBoxes > 0) (Bboxes->TotalBoxes)--;
         if ((Bboxes->LabelsCount[LabelToDelete] > 0)) (Bboxes->LabelsCount[LabelToDelete])--;
 
-        for (int i = AnnotationState.CurrentBbox; i < Bboxes->TotalBoxes + 1; ++i) {
+        for (u32 i = LabelToDelete; i < Bboxes->TotalBoxes + 1; ++i) {
             Bboxes->Boxes[i] = Bboxes->Boxes[i + 1];
         }
-        AnnotationState.CurrentBbox = Bboxes->TotalBoxes;
+        LabelToDelete = Bboxes->TotalBoxes;
     }
 }
 
@@ -75,11 +74,11 @@ void BoxManipulation(const Vector2 MousePosition)
 {
     const f32 e = 50;
     u32 CurrentBbox = 0;
-    AnnotationState.FocusMode = isBoxGrabbed;
+    AnnotationState.FocusMode = (AnnotationState.CurrentBbox != Bboxes.TotalBoxes);
 
     if (IsKeyPressed(KEY_A))
     {
-        DeleteBox(AnnotationState, &Bboxes);
+        DeleteBox(&Bboxes, AnnotationState.CurrentBbox);
     }
     
     if (!isBoxGrabbed)
