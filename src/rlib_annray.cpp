@@ -37,6 +37,7 @@ global FilePathList PathList;
 global Shader shaders = { 0 };
 global s32 FragBoxLoc; 
 global s32 FragActiveLoc; 
+global const u32 MinBboxArea = 45;
 #include "annray_async_image.cpp"
 #include "annray_fileio.cpp"
 #include "rlib_UIcommons.cpp"

@@ -28,16 +28,18 @@ bool isBoxGrabbed = false;
 
 //@TODO Make this better.  This is actually broken.. we need to be carefull of what we delete.. take a look on this.
 internal
-void DeleteBox(bboxes *Bboxes, u32 LabelToDelete) {
-    if (LabelToDelete <  Bboxes->TotalBoxes)
+void DeleteBox(bboxes *Bboxes, u32 BoxToDelete) 
+{
+    if (BoxToDelete <  Bboxes->TotalBoxes)
     {
+        u32 LabelToDelete = Bboxes->Boxes[BoxToDelete].Label;
         if (Bboxes->TotalBoxes > 0) (Bboxes->TotalBoxes)--;
         if ((Bboxes->LabelsCount[LabelToDelete] > 0)) (Bboxes->LabelsCount[LabelToDelete])--;
 
-        for (u32 i = LabelToDelete; i < Bboxes->TotalBoxes + 1; ++i) {
+        for (u32 i = BoxToDelete; i < Bboxes->TotalBoxes + 1; ++i) {
             Bboxes->Boxes[i] = Bboxes->Boxes[i + 1];
         }
-        LabelToDelete = Bboxes->TotalBoxes;
+        AnnotationState.CurrentBbox = Bboxes->TotalBoxes;
     }
 }
 
@@ -321,7 +323,7 @@ void BoxCreation(const Vector2 MousePosition)
         }
     }
     // If one goes too fast than the prevGesture can be also swipedown, not juts drag or hold.
-    if (BBox->width*BBox->height > 10 && (Bboxes.TotalBoxes < MAX_TOTAL_BOXES-1) && IsGestureReleased(AnnotationState.CurrentGesture,AnnotationState.PrevGesture))
+    if (BBox->width*BBox->height > MinBboxArea && (Bboxes.TotalBoxes < MAX_TOTAL_BOXES-1) && IsGestureReleased(AnnotationState.CurrentGesture,AnnotationState.PrevGesture))
     {
         Bboxes.TotalBoxes += 1;
         Bboxes.LabelsCount[AnnotationState.CurrentLabel] += 1;

@@ -9,7 +9,7 @@ typedef struct {
     u32 end;
 } ThreadArgs;
 
-void *loadImagesThread(void *args) {
+void *LoadImagesThread(void *args) {
     ThreadArgs *threadArgs = (ThreadArgs *)args;
 
     for (u32 PathIndex = threadArgs->start; PathIndex < threadArgs->end; ++PathIndex) {
@@ -36,7 +36,7 @@ void GenerateThumbnails(Image PreviewImages[], Texture PreviewTextures[], FilePa
         index += imagesPerThread + (i < remainder ? 1 : 0);
         threadArgs[i].end = index;
 
-        pthread_create(&threads[i], NULL, loadImagesThread, (void *)&threadArgs[i]);
+        pthread_create(&threads[i], NULL, LoadImagesThread, (void *)&threadArgs[i]);
     }
 
     for (int i = 0; i < numThreads; ++i) {

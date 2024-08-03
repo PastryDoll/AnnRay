@@ -13,11 +13,6 @@ internal void *AsyncImageLoading(void *arg)
     thread_info_image *ThreadInfo = (thread_info_image *)arg;
     for (;;)
     {
-        // if (ThreadInfo->AsyncImage.data != nullptr)
-        // {
-        //     UnloadImage(ThreadInfo->AsyncImage);
-        //     ThreadInfo->AsyncImage.data = nullptr;
-        // }
         dispatch_semaphore_wait(ThreadInfo->SemaphoreHandle, DISPATCH_TIME_FOREVER); //decrements semaphore
         CompletePastBeforeFuture
         ThreadInfo->AsyncImage = LoadImage(ThreadInfo->FileName);
