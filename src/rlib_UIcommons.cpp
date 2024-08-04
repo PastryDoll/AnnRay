@@ -38,3 +38,10 @@ void TextInputBox(Rectangle rectangle, bool *Active, u8 *CurrentCursorSprite, ch
         }
     } 
 }
+
+internal 
+void DrawLeftPanel()
+{
+    s32 ScreenHeight = GetScreenHeight();
+    DrawRectangle(0,0, PANELWIDTH, ScreenHeight, BLACK);
+}

@@ -111,13 +111,6 @@ void InitializeInventoryPage(Image PreviewImages[], Texture PreviewTextures[], F
     }
 };
 
-internal 
-void DrawLeftPanel()
-{
-    s32 ScreenHeight = GetScreenHeight();
-    DrawRectangle(0,0, PANELWIDTH, ScreenHeight, BLACK);
-}
-
 internal
 u32 InventoryPage(FilePathList PathList)
 {
